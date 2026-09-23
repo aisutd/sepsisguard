@@ -1,0 +1,7 @@
+services:
+  app:
+    image: alpine:3.20
+    working_dir: /app
+    volumes:
+      - .:/app
+    command: sh -c "echo 'SepsisGuard container is ready.' && tail -f /dev/null"
