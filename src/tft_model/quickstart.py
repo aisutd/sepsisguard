@@ -58,10 +58,59 @@ training = TimeSeriesDataSet(
     ],
 )
 #checks
-print(training)
-print("Number of training samples:", len(training)) #training windows created
+#print(training)
+#print("Number of training samples:", len(training)) #training windows created
 
-x, y = training[0]
-print(x.keys())
-print(y)
+#x, y = training[0]
+#print(x.keys())
+#print(y)
+
+
+
+#Dataloader- take model-ready windows and put them into batches so that model trains one batch at a time
+batch_size = 64
+
+train_dataloader = training.to_dataloader(
+    train=True,
+    batch_size=batch_size,
+    num_workers=0,
+)
+#print("Number of batches:", len(train_dataloader))
+
+
+#validation dataset
+validation = TimeSeriesDataSet.from_dataset(
+    training,
+    data,
+    min_prediction_idx=training_cutoff + 1, #start predictions after trianing index ends
+    stop_randomization=True, #validate on same window as trained
+)
+
+#dataLoader for validation.
+val_dataloader = validation.to_dataloader(
+    train=False, #false in order to evaluate, not train
+    batch_size=batch_size,
+    num_workers=0,
+)
+
+print("Validation samples:", len(validation))
+print("Validation batches:", len(val_dataloader))
+
+
+#create TFT
+tft = TemporalFusionTransformer.from_dataset(
+    training,
+    learning_rate=0.03, #weight change: might change later
+    hidden_size=16,
+    attention_head_size=1, #how far back into the months is the data useful
+    dropout=0.1, #prevent overfitting
+    hidden_continuous_size=8, #space given to model to process each feature
+    output_size=7, #give range of possible outcomes instead of just 1 
+    loss=QuantileLoss(),
+)
+print(f"Number of model parameters: {tft.size():,}")
+
+
+
+
 
