@@ -1,4 +1,13 @@
-#This co
+#This code is an example showing PyTorch forecasting workflow using stallion sample dataset
+#Step by Step
+#1. load time-series dataset
+#2. create time index from dates in dataset
+#3. Build a timeseries dataset for samples
+#4. Split data 80/20 for training and validation then convert them into dataloaders in order to give model batches of data
+#5. create TFT and train it using 5 epochs using Pytorch lightning
+#6. use trained model to predict next 6 months of beverage sales volume
+
+
 import numpy as np
 import pandas as pd
 import torch
@@ -21,7 +30,7 @@ data["time_idx"] = (
 
 #start months/index at 0
 data["time_idx"] -= data["time_idx"].min()
-#print(data[["date", "time_idx"]].head())
+print(data[["date", "time_idx"]].head())
 
 #use past 24 months to predict next 6 months
 max_encoder_length = 24
@@ -61,7 +70,6 @@ training = TimeSeriesDataSet(
 #checks
 #print(training)
 #print("Number of training samples:", len(training)) #training windows created
-
 #x, y = training[0]
 #print(x.keys())
 #print(y)
@@ -76,7 +84,7 @@ train_dataloader = training.to_dataloader(
     batch_size=batch_size,
     num_workers=0,
 )
-#print("Number of batches:", len(train_dataloader))
+print("Number of batches:", len(train_dataloader))
 
 
 #validation dataset
