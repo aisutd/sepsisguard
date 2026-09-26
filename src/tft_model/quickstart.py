@@ -1,3 +1,4 @@
+#This co
 import numpy as np
 import pandas as pd
 import torch
@@ -109,6 +110,24 @@ tft = TemporalFusionTransformer.from_dataset(
     loss=QuantileLoss(),
 )
 print(f"Number of model parameters: {tft.size():,}")
+
+#train the TFT
+
+# Create a Lightning trainer to handle the training loop.
+trainer = pl.Trainer(
+    max_epochs=5, #how much the model will go through training prcoess
+    accelerator="auto",#what hardware to use
+    gradient_clip_val=0.1, #adjustment size
+    limit_train_batches=30, #batches per epochs
+)
+
+# Train the TFT using the training data
+# and evaluate it on the validation data after each epoch.
+trainer.fit(
+    tft,
+    train_dataloaders=train_dataloader,
+    val_dataloaders=val_dataloader,
+)
 
 
 
