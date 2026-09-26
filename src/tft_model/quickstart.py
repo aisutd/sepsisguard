@@ -3,7 +3,7 @@
 #1. load time-series dataset
 #2. create time index from dates in dataset
 #3. Build a timeseries dataset for samples
-#4. Split data 80/20 for training and validation then convert them into dataloaders in order to give model batches of data
+#4. Split first 24 months for training and last 6 for validation, then convert them into dataloaders in order to give model batches of data
 #5. create TFT and train it using 5 epochs using Pytorch lightning
 #6. use trained model to predict next 6 months of beverage sales volume
 
@@ -35,7 +35,7 @@ print(data[["date", "time_idx"]].head())
 #use past 24 months to predict next 6 months
 max_encoder_length = 24
 max_prediction_length = 6
-#80/20 split
+#hold out on final 6 months to use for validation
 training_cutoff = data["time_idx"].max() - max_prediction_length
 
 training = TimeSeriesDataSet(
@@ -92,7 +92,7 @@ validation = TimeSeriesDataSet.from_dataset(
     training,
     data,
     min_prediction_idx=training_cutoff + 1, #start predictions after trianing index ends
-    stop_randomization=True, #validate on same window as trained
+    stop_randomization=True, #validate on same window between runs to keep consistency
 )
 
 #dataLoader for validation.
@@ -111,7 +111,7 @@ tft = TemporalFusionTransformer.from_dataset(
     training,
     learning_rate=0.03, #weight change: might change later
     hidden_size=16,
-    attention_head_size=1, #how far back into the months is the data useful
+    attention_head_size=1, #whats important and whats not
     dropout=0.1, #prevent overfitting
     hidden_continuous_size=8, #space given to model to process each feature
     output_size=7, #give range of possible outcomes instead of just 1 
