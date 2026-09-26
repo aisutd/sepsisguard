@@ -130,6 +130,16 @@ trainer.fit(
 )
 
 
+#making the actual predictions
+predictions = tft.predict(
+    val_dataloader,
+    mode="prediction",
+)
+
+print("Prediction shape:", predictions.shape) #predict with 6 per example
+print("First prediction:")
+print(predictions[0])
+
 
 
 
