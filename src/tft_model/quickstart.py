@@ -138,7 +138,7 @@ predictions = tft.predict(
 
 print("Prediction shape:", predictions.shape) #predict with 6 per example
 print("First prediction:")
-print(predictions[0])
+print(predictions[0])#first validation window
 
 
 
