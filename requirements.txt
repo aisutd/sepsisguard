@@ -1,3 +1,6 @@
 torch
 pytorch-forecasting
 pyarrow #required for pandas to open data
+pandas
+lightning
+numpy
