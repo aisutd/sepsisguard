@@ -1,0 +1,4 @@
+xgboost
+shap
+scikit-learn
+matplotlib # Used to generate and save SHAP plot
