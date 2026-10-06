@@ -1,12 +1,12 @@
-function shapChart()
+function ShapChart()
 {
     return(
-        <section shapChart="panel">
+        <section className="panel">
             <h2>Shap Chart</h2>
             
-            <p>Shap chart coming soon...</p>
+            <p className="placeholder">Shap chart coming soon...</p>
         </section>
     );
 }
 
-export default shapChart;
+export default ShapChart;

@@ -31,14 +31,14 @@
 
 .detail {
   grid-area: detail;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-rows: 1fr 1fr;
   gap: var(--space);
 }
 
 .detail-row {
   display: grid;
-  grid-template-columns: 1fr 2fr;
+  grid-template-columns: 1fr 1fr;
   gap: var(--space);
 }
 
@@ -66,6 +66,10 @@
       "header"
       "sidebar"
       "detail";
+  }
+
+  .detail {
+    grid-template-rows: auto;
   }
 
   .detail-row {

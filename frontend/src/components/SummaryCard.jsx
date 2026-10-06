@@ -1,12 +1,12 @@
-function summaryCard()
+function SummaryCard()
 {
     return(
         <section className="panel">
             <h2>Summary Card</h2>
             
-            <p>Summary card coming soon...</p>
+            <p className="placeholder">Summary card coming soon...</p>
         </section>
     );
 }
 
-export default summaryCard;
+export default SummaryCard;
