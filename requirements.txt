@@ -1,2 +1,9 @@
 transformers>=4.44,<5
 torch
+fastapi
+uvicorn
+pytorch-forecasting
+pyarrow #required for pandas to open data
+pandas
+lightning
+numpy
