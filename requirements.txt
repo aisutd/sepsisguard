@@ -11,3 +11,6 @@ pyarrow #required for pandas to open data
 pandas
 lightning
 numpy
+xgboost
+shap
+scikit-learn
