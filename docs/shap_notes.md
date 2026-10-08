@@ -1,33 +1,3 @@
-SHAP Baseline Nptes
+SHAP Baseline Notes
 
-Top Features: 
-- Will add once model runs
-
-Observations:
-- 
-
-Couldn't find ShapChat().jsv
-
-function ShapChart(){
-    //Anikait's work
-    const topFeatures = [
-        { name: "Feature 1 (Pending)", value: 0.0},
-        { name: "Feature 2 (Pending)", value: 0.0},
-        { name: "Feature 3 (Pending)", value: 0.0},
-        { name: "Feature 3 (Pending)", value: 0.0}
-    ];
-
-    return(
-        <section className="panel">
-            <h2>SHAP Feature Importance (Baseline)</h2>
-            <u1 className="shap-list>
-                {topFeatures.map((feat, index) => (
-                    <li key={index}>
-                        <span>{feat.name}</span>: <span>{feat.value}</span>
-                    </li>
-                ))}
-            </section>
-    );
-}
-
-export default ShapChart;
+The features that showed up as most important for predicting sepsis in our baseline model are ICULOS, Magnesium and WBC. It was a little suprising to see Magnesium ranl so high right alognside ICULOS, as clinical intuition often points immediately to vitals like temperature or heart rate. However, length of ICU stay (ICULOS) making the top spot makes total sense since longer stays inherently increase cumulative spesis risk.
