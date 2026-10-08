@@ -1,3 +1,7 @@
+xgboost
+shap
+scikit-learn
+matplotlib # Used to generate and save SHAP plot
 transformers>=4.44,<5
 torch
 fastapi
