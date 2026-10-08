@@ -3,3 +3,9 @@ __pycache__/
 *.pyc
 lightning_logs/
 .vscode/
+# Raw PhysioNet data: 40k files, re-download with download_all.py
+data/raw/
+
+# Cleaned data: too big for GitHub (train.csv is 229 MB), regenerate with clean_patients.py
+data/processed/train.csv
+data/processed/test.csv
