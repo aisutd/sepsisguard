@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"; //pulls two tools from react library
-
+import SummaryCard from "./SummaryCard";
 function App() {
   //sets the state of the variables for current and a function to change it 
   const [health, setHealth] = useState(null);
@@ -34,6 +34,7 @@ function App() {
       {health && (
         <pre>{JSON.stringify(health, null, 2)}</pre>
       )}
+      <SummaryCard />
     </main>
   );
 }
