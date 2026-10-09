@@ -1,6 +1,6 @@
 
 #this code...
-
+import json
 from pathlib import Path
 import pandas as pd
 from pytorch_forecasting import TimeSeriesDataSet
@@ -166,11 +166,19 @@ def inspect_full_data(filename="train.csv", chunk_size=100000):
     print("Missing values:", missing_values)
     print("Invalid sepsis labels:", invalid_labels)
 
+    return {
+        "records": int(total_rows),
+        "patients": int(len(patient_counts)),
+        "patients_25_plus": int(eligible_patients),
+        "missing_values": int(missing_values),
+        "invalid_labels": int(invalid_labels)
+    }
+
 
 
 #Load real patient records from the processed CSVs
-inspect_full_data("train.csv")
-inspect_full_data("test.csv")
+train_stats = inspect_full_data("train.csv")
+test_stats = inspect_full_data("test.csv")
 
 data = load_data()
 
@@ -230,3 +238,20 @@ print("Target shape:", y[0].shape)
 
 print("\nPatient data pipeline completed successfully!")
 
+#forntend support
+status = {
+    "train": train_stats,
+    "test": test_stats,
+    "subset": {
+        "windows": len(patient_dataset),
+        "batches": len(patient_dataloader)
+    }
+}
+
+status_path = PROJECT_ROOT / "frontend/public/pipeline-status.json"
+status_path.parent.mkdir(parents=True, exist_ok=True)
+
+with open(status_path, "w") as file:
+    json.dump(status, file, indent=4)
+
+print("Pipeline status saved to:", status_path)
