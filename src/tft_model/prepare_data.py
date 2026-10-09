@@ -36,111 +36,145 @@ OUTPUT_COLS = (
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
-#Load the five raw patient files for initial testing
-def load_raw_sample():
-    frames = []
-    raw_folder = PROJECT_ROOT / "data/raw"
+def load_data(nrows=50000):
+    train_path = PROJECT_ROOT / "data/processed/train.csv"
 
-    # Find all PSV files in the raw data folder
-    for path in sorted(raw_folder.glob("*.psv")):
-        patient = pd.read_csv(path, sep="|")
+    if not train_path.exists():
+        raise FileNotFoundError(f"File not found: {train_path}")
 
-        # Identify the patient from the filename.
-        patient["patient_id"] = path.stem
-        patient["site"] = "A"
+    data = pd.read_csv(train_path, nrows=nrows)
 
-        frames.append(patient)
-
-    if not frames:
-        raise FileNotFoundError("No raw patient files found.")
-
-    return pd.concat(frames, ignore_index=True)
+    return data
 
 
-def clean_raw_sample(raw_data):
+#checks required columns, values, chronological sorting, label conversion
+# basically everything before forecasting receives the data
+def validate_data(data, max_encoder_length, max_prediction_length):
+
+    required_cols = [
+        "site", "patient_id", "ICULOS", "SepsisLabel"
+    ] + FEATURES
 
     missing_cols = [
-        col for col in OUTPUT_COLS
-        if col not in raw_data.columns
+        col for col in required_cols
+        if col not in data.columns
     ]
 
     if missing_cols:
         raise ValueError(f"Missing columns: {missing_cols}")
 
-    data = raw_data[OUTPUT_COLS].copy()
-    data["ICULOS"] = data["ICULOS"].astype(int)
-
-    data = data.drop_duplicates(
-        subset=["site", "patient_id", "ICULOS"],
-        keep="last"
-    )
+    if data[required_cols].isna().any().any():
+        raise ValueError("Dataset contains missing values")
 
     # Sort patient records in chronological order
     data = data.sort_values(
         ["site", "patient_id", "ICULOS"]
     ).reset_index(drop=True)
 
-    patient_frames = []
-
-    for (site, patient_id), patient in data.groupby(
-        ["site", "patient_id"]
-    ):
-        patient = patient.set_index("ICULOS")
-
-        hours = range(
-            int(patient.index.min()),
-            int(patient.index.max()) + 1
-        )
-
-        patient = patient.reindex(hours)
-        patient.index.name = "ICULOS"
-
-        patient["site"] = site
-        patient["patient_id"] = patient_id
-
-        patient_frames.append(patient.reset_index())
-
-    data = pd.concat(patient_frames, ignore_index=True)
-
-    data[FEATURES] = data[FEATURES].apply(
-        pd.to_numeric, errors="coerce"
-    )
-
-    data[FEATURES] = data.groupby(
-        ["site", "patient_id"]
-    )[FEATURES].ffill()
-
-    medians = data[FEATURES].median()
-
-    all_missing = medians[medians.isna()].index.tolist()
-
-    if all_missing:
-        print("Warning: no recorded values for:", all_missing)
-        print("Using zero placeholders for these test-only features.")
-
-    medians = medians.fillna(0.0)
-    data[FEATURES] = data[FEATURES].fillna(medians)
-
     # The label is binary (0 or 1).
-    data["SepsisLabel"] = pd.to_numeric(
-        data["SepsisLabel"], errors="coerce"
-    )
+    data["SepsisLabel"] = data["SepsisLabel"].astype("float32")
 
-    data["SepsisLabel"] = data.groupby(
+    patient_lengths = data.groupby(
         ["site", "patient_id"]
-    )["SepsisLabel"].ffill().fillna(0).astype("float32")
+    )["ICULOS"].transform("size")
 
-    assert not data[FEATURES].isna().any().any()
-    assert not data["SepsisLabel"].isna().any()
-    assert data["SepsisLabel"].isin([0, 1]).all()
+    data = data[
+        patient_lengths >= (
+            max_encoder_length + max_prediction_length
+        )
+    ].copy()
+
+    if data.empty:
+        raise ValueError(
+            "No patients have enough hours for a "
+            "24-hour encoder and 1-hour prediction."
+        )
 
     return data
 
+def create_dataset(data, max_encoder_length, max_prediction_length):
 
-# Load real patient records from the raw PSV files.
-train_path = PROJECT_ROOT / "data/processed/train.csv"
+    patient_dataset = TimeSeriesDataSet(
+        data,
 
-data = pd.read_csv(train_path, nrows=50000)
+        #Identify which patient each sequence belongs to, keeps each paitent history seperate even if IDs overlap
+        group_ids=["site", "patient_id"],
+
+        #Track the order of hourly observations (hours)
+        time_idx="ICULOS",
+
+        #Value the model will eventually predict
+        target="SepsisLabel",
+
+        max_encoder_length=max_encoder_length,
+        min_encoder_length=max_encoder_length,
+        max_prediction_length=max_prediction_length,
+
+        #Information that stays constant
+        static_categoricals=["site"],
+        static_reals=DEMOGRAPHICS,
+
+        #hour numbers are known in advance
+        time_varying_known_reals=["ICULOS"],
+
+        #Future vitals, labs, and labels are not known
+        time_varying_unknown_reals=VITALS + LABS + ["SepsisLabel"],
+
+        #Preserve the original 0/1 target values.
+        target_normalizer=None,
+    )
+
+    return patient_dataset
+
+#only load 100k rows at a time
+def inspect_full_data(filename="train.csv", chunk_size=100000):
+    train_path = PROJECT_ROOT / "data/processed" / filename
+
+    total_rows = 0
+    missing_values = 0
+    invalid_labels = 0
+    patient_counts = {}
+
+    for chunk in pd.read_csv(train_path, chunksize=chunk_size):
+        total_rows += len(chunk)
+
+        missing_values += chunk[
+            FEATURES + ["SepsisLabel"]
+        ].isna().sum().sum()
+
+        invalid_labels += (
+            ~chunk["SepsisLabel"].isin([0, 1])
+        ).sum()
+
+        counts = chunk.groupby(
+            ["site", "patient_id"]
+        ).size()
+
+        for patient, count in counts.items():
+            patient_counts[patient] = (
+                patient_counts.get(patient, 0) + count
+            )
+
+    eligible_patients = sum(
+        count >= 25 for count in patient_counts.values()
+    )
+
+    print(f"\nFull dataset inspection: {filename}")
+    print("Total records:", total_rows)
+    print("Total patients:", len(patient_counts))
+    print("Patients with 25+ records:", eligible_patients)
+    print("Missing values:", missing_values)
+    print("Invalid sepsis labels:", invalid_labels)
+
+
+
+#Load real patient records from the processed CSVs
+inspect_full_data("train.csv")
+inspect_full_data("test.csv")
+
+data = load_data()
+
+
 
 # Check how much data we have.
 print("Data shape:", data.shape)
@@ -153,68 +187,26 @@ print(data.groupby("patient_id")["ICULOS"].nunique().describe())
 # Check missing values.
 print("Missing values:", data[FEATURES + ["SepsisLabel"]].isna().sum().sum())
 
-# Sort patient records in chronological order
-data = data.sort_values(
-    ["site", "patient_id", "ICULOS"]
-).reset_index(drop=True)
-
-# The label is binary (0 or 1).
-data["SepsisLabel"] = data["SepsisLabel"].astype("float32")
 
 
-
-# Use 24 past hours to prepare a 1-hour-ahead prediction.
+# Use 24 past hours to prepare a 1-hour-ahead prediction
 max_encoder_length = 24
 max_prediction_length = 1
 
-patient_lengths = data.groupby(
-    ["site", "patient_id"]
-)["ICULOS"].transform("size")
-
-data = data[
-    patient_lengths >= (
-        max_encoder_length + max_prediction_length
-    )
-].copy()
-
-if data.empty:
-    raise ValueError(
-        "No patients have enough hours for a "
-        "24-hour encoder and 1-hour prediction."
-    )
+data = validate_data(
+    data,
+    max_encoder_length,
+    max_prediction_length
+)
 
 print("\nPatients with enough history:",
       data[["site", "patient_id"]].drop_duplicates().shape[0])
 
 
-patient_dataset = TimeSeriesDataSet(
+patient_dataset = create_dataset(
     data,
-
-    #Identify which patient each sequence belongs to, keeps each paitent history seperate even if IDs overlap
-    group_ids=["site", "patient_id"],
-
-    #Track the order of hourly observations (hours)
-    time_idx="ICULOS",
-
-    #Value the model will eventually predict
-    target="SepsisLabel",
-
-    max_encoder_length=max_encoder_length,
-    min_encoder_length=max_encoder_length,
-    max_prediction_length=max_prediction_length,
-
-    #Information that stays constant
-    static_categoricals=["site"],
-    static_reals=DEMOGRAPHICS,
-
-    #hour numbers are known in advance
-    time_varying_known_reals=["ICULOS"],
-
-    #Future vitals, labs, and labels are not known
-    time_varying_unknown_reals=VITALS + LABS + ["SepsisLabel"],
-
-    #Preserve the original 0/1 target values.
-    target_normalizer=None,
+    max_encoder_length,
+    max_prediction_length
 )
 
 print("\nTimeSeriesDataSet created successfully!")
