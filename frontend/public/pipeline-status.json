@@ -1,0 +1,20 @@
+{
+    "train": {
+        "records": 1243430,
+        "patients": 32269,
+        "patients_25_plus": 23823,
+        "missing_values": 0,
+        "invalid_labels": 0
+    },
+    "test": {
+        "records": 308780,
+        "patients": 8067,
+        "patients_25_plus": 5972,
+        "missing_values": 0,
+        "invalid_labels": 0
+    },
+    "subset": {
+        "windows": 21061,
+        "batches": 2633
+    }
+}
