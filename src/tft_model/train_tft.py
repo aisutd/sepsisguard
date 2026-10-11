@@ -13,6 +13,7 @@ import torch
 from lightning.pytorch import Trainer, seed_everything
 from pytorch_forecasting import TemporalFusionTransformer
 from pytorch_forecasting.metrics import CrossEntropy
+from sklearn.metrics import roc_auc_score, average_precision_score
 
 # Vital signs recorded for patients
 VITALS = [
@@ -217,11 +218,11 @@ def train_model(train_dataset, train_loader, val_loader):
 
     # Configure a small training run
     trainer = Trainer(
-        max_epochs=2,
+        max_epochs=3,
         accelerator="cpu",
         devices=1,
-        limit_train_batches=20,
-        limit_val_batches=10,
+        limit_train_batches=100,
+        limit_val_batches=130,
         gradient_clip_val=0.1,
         num_sanity_val_steps=0,
         logger=False,
@@ -332,6 +333,99 @@ def generate_predictions(tft, train_dataset):
 
     return results
 
+# AUROC and AUPRC generation
+def evaluate_model(tft, train_dataset):
+
+    test_path = PROJECT_ROOT / "data/processed/test.csv"
+    test_data = pd.read_csv(test_path)
+
+    # Find patients with enough history
+    patient_info = test_data.groupby(
+        ["site", "patient_id"], as_index=False
+    )["ICULOS"].nunique()
+
+    eligible = patient_info[
+        patient_info["ICULOS"] >= 25
+    ]
+
+    # Randomly select 500 test patients and keep all their hours
+    selected = eligible.sample(
+        n=min(500, len(eligible)),
+        random_state=42
+    )[["site", "patient_id"]]
+
+    test_data = test_data.merge(
+        selected,
+        on=["site", "patient_id"],
+        how="inner"
+    )
+
+    test_data["SepsisClass"] = (
+        test_data["SepsisLabel"].astype(int).astype(str)
+    )
+
+    test_data = test_data.sort_values(
+        ["site", "patient_id", "ICULOS"]
+    ).reset_index(drop=True)
+
+    # Reuse the training dataset's encoders and scalers
+    test_dataset = TimeSeriesDataSet.from_dataset(
+        train_dataset,
+        test_data,
+        predict=False,
+        stop_randomization=True
+    )
+
+    test_loader = test_dataset.to_dataloader(
+        train=False,
+        batch_size=64,
+        num_workers=0
+    )
+
+    # Get model predictions and matching real labels
+    predictions = tft.predict(
+        test_loader,
+        mode=("raw", "prediction"),
+        return_y=True,
+        trainer_kwargs={
+            "accelerator": "cpu",
+            "devices": 1,
+            "logger": False
+        }
+    )
+
+    # Convert model outputs into probabilities for sepsis class 1
+    positive_class = train_dataset.target_normalizer.classes_["1"]
+
+    y_scores = torch.softmax(
+        predictions.output,
+        dim=-1
+    )[..., positive_class].reshape(-1).cpu().numpy()
+
+    # Get the actual label for each predicted hour
+    y_true = predictions.y[0].reshape(-1).cpu().numpy()
+
+    if len(y_true) != len(y_scores):
+        raise ValueError("Predictions and labels do not match.")
+
+    if len(set(y_true.tolist())) < 2:
+        raise ValueError(
+            "Need both positive and negative labels to calculate AUROC."
+        )
+
+    auroc = roc_auc_score(y_true, y_scores)
+    auprc = average_precision_score(y_true, y_scores)
+
+    print("\nTest Evaluation:")
+    print("Patients sampled:", len(selected))
+    print("Windows evaluated:", len(y_true))
+    print("Positive windows:", int(y_true.sum()))
+    print("Positive rate:", round(float(y_true.mean()), 4))
+    print(f"AUROC: {auroc:.4f}")
+    print(f"AUPRC (Average Precision): {auprc:.4f}")
+
+    return auroc, auprc
+
 # What runs when script is ran in order to check everything is correct
 if __name__ == "__main__":
 
@@ -403,6 +497,8 @@ if __name__ == "__main__":
 
     # Check Predictions 
     predictions = generate_predictions(tft, train_dataset)
+
+    auroc, auprc = evaluate_model(tft, train_dataset)
 
 
 
