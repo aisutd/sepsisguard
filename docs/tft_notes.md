@@ -14,3 +14,9 @@ week 1 notes
    Encoder: [8, 24, 37]
    Decoder: [8, 1, 37]
    Target: [8, 1]
+
+Week 3 Notes
+- Trained TFT using 1000 paitents, spliting 80/20.
+- TFT had over 12000 parameters. The model uses first 24 hours to predict the next hour
+- Did 2 epochs using 20 training batches per epoch...Training loss decreased from 0.568 to 0.323, and validation loss decreased from 0.413 to 0.237.
+- model still needs more training and proper evaluation using AUROC and AUPRC to understand how accurately it predicts sepsis.
