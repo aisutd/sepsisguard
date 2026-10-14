@@ -10,7 +10,7 @@
 const summaryRecord = {
   patient_id: "mock_p001",
   summary:
-    "Lactate, time in the ICU, and heart rate raised this patient's predicted sepsis risk. Temperature and age lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "Lactate raised this patient's predicted sepsis risk the most, followed by time in the ICU and heart rate. Temperature and age lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
   verified: true,
 };
 

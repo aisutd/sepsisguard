@@ -13,6 +13,8 @@ each SHAP value. A summary passes ("verified": true) only if ALL of these hold:
   5. It brings in no clinical reason the model never saw, such as
      "infection" or "kidney failure". These aren't features, so check 2
      can't catch them, but they read like reasons and would mislead.
+  6. It keeps the caveat sentence (CAVEAT in generate_summary.py) word for
+     word, so no summary reaches a reader without it.
 
 Top-5 features the summary leaves out are reported as a warning but do not
 fail it, because naming fewer reasons is incomplete rather than wrong.
@@ -29,7 +31,7 @@ import sys
 from pathlib import Path
 
 from feature_names import FEATURES, GROUP_TERMS
-from generate_summary import generate_summary, parse_top_features
+from generate_summary import CAVEAT, generate_summary, parse_top_features
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 REAL_INPUT = REPO_ROOT / "data/sample/shap_top_features.json"
@@ -168,6 +170,10 @@ def verify_summary(summary, entry):
     for match in OUTSIDE_CLAIMS.finditer(summary):
         problems.append(f"brings in '{match.group(0)}', which is not a model input")
 
+    # Check 6: the caveat is present word for word.
+    if CAVEAT not in summary:
+        problems.append("is missing the caveat sentence")
+
     # Soft check: which top features went unmentioned.
     omitted = [c for c in top if c not in mentioned]
     if omitted:
@@ -237,7 +243,7 @@ def main():
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(records, indent=2) + "\n")
-    print(f"\nWrote {len(records)} records to {args.output.relative_to(REPO_ROOT)}")
+    print(f"\nWrote {len(records)} records to {args.output}")
 
     # Exit nonzero if anything we are about to show is unverified.
     return 0 if all(r["verified"] for r in records) else 1

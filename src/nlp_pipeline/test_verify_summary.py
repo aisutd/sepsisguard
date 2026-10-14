@@ -12,7 +12,7 @@ import json
 import unittest
 from pathlib import Path
 
-from generate_summary import generate_summary, parse_top_features
+from generate_summary import CAVEAT, generate_summary, parse_top_features
 from verify_summary import MOCK_INPUT, find_mentions, verify_summary
 
 # Lactate, ICULOS and HR push risk up; Temp and Age push it down.
@@ -40,9 +40,21 @@ class TemplateTests(unittest.TestCase):
     def test_groups_by_direction_strongest_first(self):
         self.assertEqual(
             generate_summary(PATIENT),
-            "Lactate, time in the ICU, and heart rate raised this patient's "
-            "predicted sepsis risk. Temperature and age lowered it. These "
-            "reflect what the model weighed, not measured values or a diagnosis.",
+            "Lactate raised this patient's predicted sepsis risk the most, "
+            "followed by time in the ICU and heart rate. Temperature and age "
+            "lowered it. These reflect what the model weighed, not measured "
+            "values or a diagnosis.",
+        )
+
+    def test_strongest_negative_feature_leads(self):
+        entry = {"patient_id": "x", "top_features": [
+            {"feature": "Temp", "shap_value": -0.5},
+            {"feature": "Age", "shap_value": -0.2},
+            {"feature": "HR", "shap_value": 0.3}]}
+        self.assertEqual(
+            generate_summary(entry),
+            "Temperature lowered this patient's predicted sepsis risk the most, "
+            "followed by age. Heart rate raised it. " + CAVEAT,
         )
 
     def test_only_negative_features(self):
@@ -112,27 +124,30 @@ class VerifierCatchesBadSummaries(unittest.TestCase):
     def test_no_features(self):
         self.assertFails("The model made a prediction.", "names no features")
 
+    def test_missing_caveat(self):
+        self.assertFails("Lactate raised the risk.", "missing the caveat")
+
 
 class VerifierAcceptsGoodSummaries(unittest.TestCase):
     def test_paraphrase_with_synonyms_passes(self):
         result = verify_summary(
-            "Lactic acid, ICU length of stay and pulse increased the estimated risk.",
+            "Lactic acid, ICU length of stay and pulse increased the estimated risk." + " " + CAVEAT,
             PATIENT)
         self.assertTrue(result["verified"], result)
 
     def test_partial_summary_passes_with_warning(self):
-        result = verify_summary("Lactate raised the predicted risk.", PATIENT)
+        result = verify_summary("Lactate raised the predicted risk." + " " + CAVEAT, PATIENT)
         self.assertTrue(result["verified"])
         self.assertIn("leaves out: ICULOS, HR, Temp, Age", result["warnings"])
 
     def test_negated_diagnosis_is_not_a_claim(self):
         result = verify_summary(
-            "Lactate raised the risk. This is not a diagnosis.", PATIENT)
+            "Lactate raised the risk. This is not a diagnosis." + " " + CAVEAT, PATIENT)
         self.assertTrue(result["verified"], result)
 
     def test_mixed_direction_sentence_is_skipped_with_warning(self):
         result = verify_summary(
-            "Lactate raised the risk while temperature lowered it.", PATIENT)
+            "Lactate raised the risk while temperature lowered it." + " " + CAVEAT, PATIENT)
         self.assertTrue(result["verified"], result)
         self.assertTrue(any("mixed wording" in w for w in result["warnings"]))
 
@@ -149,7 +164,7 @@ class MentionMatching(unittest.TestCase):
 
     def test_group_term_is_grounded_by_any_member(self):
         entry = {"patient_id": "x", "top_features": [{"feature": "MAP", "shap_value": 0.2}]}
-        self.assertTrue(verify_summary("Blood pressure raised the risk.", entry)["verified"])
+        self.assertTrue(verify_summary("Blood pressure raised the risk." + " " + CAVEAT, entry)["verified"])
 
 
 if __name__ == "__main__":

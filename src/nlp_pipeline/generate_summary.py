@@ -95,28 +95,38 @@ def template_summary(entry):
     """Build the summary from a fixed sentence pattern.
 
     Features are split by the sign of their SHAP value and each group keeps
-    its strongest-first order, e.g.:
+    its strongest-first order. The group with the strongest feature comes
+    first, e.g.:
 
-        "Lactate, time in the ICU, and heart rate raised this patient's
-        predicted sepsis risk. Temperature and age lowered it.
-        These reflect what the model weighed, not measured values or a
-        diagnosis."
+        "Lactate raised this patient's predicted sepsis risk the most,
+        followed by time in the ICU and heart rate. Temperature and age
+        lowered it. These reflect what the model weighed, not measured
+        values or a diagnosis."
     """
     features = parse_top_features(entry)
 
     raised = [readable_name(f) for f, v in features if v > 0]
     lowered = [readable_name(f) for f, v in features if v < 0]
 
+    # The group holding the single strongest feature goes first, so its
+    # first name is the strongest overall and "the most" is true.
+    groups = [("raised", raised), ("lowered", lowered)]
+    if features[0][1] < 0:
+        groups.reverse()
+    (lead_verb, lead), (other_verb, other) = groups
+
     sentences = []
-    if raised:
-        sentences.append(
-            f"{join_names(raised)} raised this patient's predicted "
-            "sepsis risk."
-        )
-    if lowered:
-        # Say "it" only when the previous sentence already named the risk.
-        target = "it" if raised else "this patient's predicted sepsis risk"
-        sentences.append(f"{join_names(lowered)} lowered {target}.")
+    if lead:
+        risk = "this patient's predicted sepsis risk"
+        if len(lead) > 1:
+            sentences.append(
+                f"{lead[0]} {lead_verb} {risk} the most, "
+                f"followed by {join_names(lead[1:])}."
+            )
+        else:
+            sentences.append(f"{lead[0]} {lead_verb} {risk}.")
+    if other:
+        sentences.append(f"{join_names(other)} {other_verb} it.")
     sentences.append(CAVEAT)
 
     # Capitalize the first letter of each sentence without touching the

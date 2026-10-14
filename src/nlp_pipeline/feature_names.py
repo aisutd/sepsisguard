@@ -54,7 +54,7 @@ FEATURES = {
     "Unit1": ("being in a medical ICU", ["MICU", "medical ICU"]),
     "Unit2": ("being in a surgical ICU", ["SICU", "surgical ICU"]),
     "HospAdmTime": ("time since hospital admission", ["hospital admission"]),
-    "ICULOS": ("time in the ICU", ["ICU length of stay", "ICULOS"]),
+    "ICULOS": ("time in the ICU", ["ICU length of stay", "ICULOS", "time in ICU"]),
 }
 
 # Generic phrases that point to a group of features rather than one.
