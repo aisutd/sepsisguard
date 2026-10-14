@@ -1,0 +1,74 @@
+[
+  {
+    "patient_id": "mock_p001",
+    "summary": "Lactate, time in the ICU, and heart rate raised this patient's predicted sepsis risk. Temperature and age lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "verified": true,
+    "backend": "template"
+  },
+  {
+    "patient_id": "mock_p002",
+    "summary": "Time in the ICU, respiratory rate, white blood cell count, and platelet count raised this patient's predicted sepsis risk. Mean arterial pressure lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "verified": true,
+    "backend": "template"
+  },
+  {
+    "patient_id": "mock_p003",
+    "summary": "Time since hospital admission, time in the ICU, temperature, oxygen saturation, and age lowered this patient's predicted sepsis risk. These reflect what the model weighed, not measured values or a diagnosis.",
+    "verified": true,
+    "backend": "template"
+  },
+  {
+    "patient_id": "mock_p004",
+    "summary": "Systolic blood pressure, blood urea nitrogen, creatinine, and sex raised this patient's predicted sepsis risk. Blood pH lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "verified": true,
+    "backend": "template"
+  },
+  {
+    "patient_id": "mock_p005",
+    "summary": "Temperature, heart rate, white blood cell count, and glucose raised this patient's predicted sepsis risk. Being in a medical ICU lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "verified": true,
+    "backend": "template"
+  },
+  {
+    "patient_id": "mock_p006",
+    "summary": "Time in the ICU, fraction of inspired oxygen, and arterial CO2 pressure raised this patient's predicted sepsis risk. Bicarbonate and base excess lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "verified": true,
+    "backend": "template"
+  },
+  {
+    "patient_id": "mock_p007",
+    "summary": "Hemoglobin and hematocrit raised this patient's predicted sepsis risk. Respiratory rate, heart rate, and time in the ICU lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "verified": true,
+    "backend": "template"
+  },
+  {
+    "patient_id": "mock_p008",
+    "summary": "Total bilirubin, platelet count, partial thromboplastin time, and AST raised this patient's predicted sepsis risk. Fibrinogen lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "verified": true,
+    "backend": "template"
+  },
+  {
+    "patient_id": "mock_p009",
+    "summary": "Lactate, mean arterial pressure, diastolic blood pressure, and systolic blood pressure raised this patient's predicted sepsis risk. Potassium lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "verified": true,
+    "backend": "template"
+  },
+  {
+    "patient_id": "mock_p010",
+    "summary": "Age, time since hospital admission, and magnesium raised this patient's predicted sepsis risk. Being in a surgical ICU lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "verified": true,
+    "backend": "template"
+  },
+  {
+    "patient_id": "mock_p011",
+    "summary": "Troponin I and chloride raised this patient's predicted sepsis risk. End-tidal CO2, arterial oxygen saturation, and phosphate lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "verified": true,
+    "backend": "template"
+  },
+  {
+    "patient_id": "mock_p012",
+    "summary": "Time in the ICU, temperature, alkaline phosphatase, and direct bilirubin raised this patient's predicted sepsis risk. Hematocrit lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "verified": true,
+    "backend": "template"
+  }
+]
