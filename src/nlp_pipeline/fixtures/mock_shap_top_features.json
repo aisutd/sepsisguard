@@ -1,0 +1,302 @@
+[
+  {
+    "patient_id": "mock_p001",
+    "top_features": [
+      {
+        "feature": "Lactate",
+        "shap_value": 0.42
+      },
+      {
+        "feature": "ICULOS",
+        "shap_value": 0.31
+      },
+      {
+        "feature": "HR",
+        "shap_value": 0.18
+      },
+      {
+        "feature": "Temp",
+        "shap_value": -0.12
+      },
+      {
+        "feature": "Age",
+        "shap_value": -0.05
+      }
+    ]
+  },
+  {
+    "patient_id": "mock_p002",
+    "top_features": [
+      {
+        "feature": "ICULOS",
+        "shap_value": 0.55
+      },
+      {
+        "feature": "Resp",
+        "shap_value": 0.27
+      },
+      {
+        "feature": "WBC",
+        "shap_value": 0.19
+      },
+      {
+        "feature": "MAP",
+        "shap_value": -0.11
+      },
+      {
+        "feature": "Platelets",
+        "shap_value": 0.06
+      }
+    ]
+  },
+  {
+    "patient_id": "mock_p003",
+    "top_features": [
+      {
+        "feature": "HospAdmTime",
+        "shap_value": -0.38
+      },
+      {
+        "feature": "ICULOS",
+        "shap_value": -0.3
+      },
+      {
+        "feature": "Temp",
+        "shap_value": -0.14
+      },
+      {
+        "feature": "O2Sat",
+        "shap_value": -0.09
+      },
+      {
+        "feature": "Age",
+        "shap_value": -0.04
+      }
+    ]
+  },
+  {
+    "patient_id": "mock_p004",
+    "top_features": [
+      {
+        "feature": "SBP",
+        "shap_value": 0.33
+      },
+      {
+        "feature": "BUN",
+        "shap_value": 0.24
+      },
+      {
+        "feature": "Creatinine",
+        "shap_value": 0.21
+      },
+      {
+        "feature": "pH",
+        "shap_value": -0.08
+      },
+      {
+        "feature": "Gender",
+        "shap_value": 0.03
+      }
+    ]
+  },
+  {
+    "patient_id": "mock_p005",
+    "top_features": [
+      {
+        "feature": "Temp",
+        "shap_value": 0.47
+      },
+      {
+        "feature": "HR",
+        "shap_value": 0.29
+      },
+      {
+        "feature": "WBC",
+        "shap_value": 0.25
+      },
+      {
+        "feature": "Unit1",
+        "shap_value": -0.07
+      },
+      {
+        "feature": "Glucose",
+        "shap_value": 0.04
+      }
+    ]
+  },
+  {
+    "patient_id": "mock_p006",
+    "top_features": [
+      {
+        "feature": "ICULOS",
+        "shap_value": 0.61
+      },
+      {
+        "feature": "FiO2",
+        "shap_value": 0.22
+      },
+      {
+        "feature": "PaCO2",
+        "shap_value": 0.1
+      },
+      {
+        "feature": "HCO3",
+        "shap_value": -0.09
+      },
+      {
+        "feature": "BaseExcess",
+        "shap_value": -0.06
+      }
+    ]
+  },
+  {
+    "patient_id": "mock_p007",
+    "top_features": [
+      {
+        "feature": "Resp",
+        "shap_value": -0.26
+      },
+      {
+        "feature": "HR",
+        "shap_value": -0.2
+      },
+      {
+        "feature": "ICULOS",
+        "shap_value": -0.18
+      },
+      {
+        "feature": "Hgb",
+        "shap_value": 0.07
+      },
+      {
+        "feature": "Hct",
+        "shap_value": 0.05
+      }
+    ]
+  },
+  {
+    "patient_id": "mock_p008",
+    "top_features": [
+      {
+        "feature": "Bilirubin_total",
+        "shap_value": 0.36
+      },
+      {
+        "feature": "Platelets",
+        "shap_value": 0.28
+      },
+      {
+        "feature": "PTT",
+        "shap_value": 0.17
+      },
+      {
+        "feature": "Fibrinogen",
+        "shap_value": -0.1
+      },
+      {
+        "feature": "AST",
+        "shap_value": 0.08
+      }
+    ]
+  },
+  {
+    "patient_id": "mock_p009",
+    "top_features": [
+      {
+        "feature": "Lactate",
+        "shap_value": 0.39
+      },
+      {
+        "feature": "MAP",
+        "shap_value": 0.34
+      },
+      {
+        "feature": "DBP",
+        "shap_value": 0.12
+      },
+      {
+        "feature": "SBP",
+        "shap_value": 0.11
+      },
+      {
+        "feature": "Potassium",
+        "shap_value": -0.02
+      }
+    ]
+  },
+  {
+    "patient_id": "mock_p010",
+    "top_features": [
+      {
+        "feature": "Age",
+        "shap_value": 0.21
+      },
+      {
+        "feature": "HospAdmTime",
+        "shap_value": 0.19
+      },
+      {
+        "feature": "Unit2",
+        "shap_value": -0.15
+      },
+      {
+        "feature": "Magnesium",
+        "shap_value": 0.04
+      },
+      {
+        "feature": "Calcium",
+        "shap_value": 0.0
+      }
+    ]
+  },
+  {
+    "patient_id": "mock_p011",
+    "top_features": [
+      {
+        "feature": "TroponinI",
+        "shap_value": 0.3
+      },
+      {
+        "feature": "EtCO2",
+        "shap_value": -0.18
+      },
+      {
+        "feature": "SaO2",
+        "shap_value": -0.12
+      },
+      {
+        "feature": "Chloride",
+        "shap_value": 0.06
+      },
+      {
+        "feature": "Phosphate",
+        "shap_value": -0.03
+      }
+    ]
+  },
+  {
+    "patient_id": "mock_p012",
+    "top_features": [
+      {
+        "feature": "ICULOS",
+        "shap_value": 0.44
+      },
+      {
+        "feature": "Temp",
+        "shap_value": 0.2
+      },
+      {
+        "feature": "Alkalinephos",
+        "shap_value": 0.09
+      },
+      {
+        "feature": "Bilirubin_direct",
+        "shap_value": 0.07
+      },
+      {
+        "feature": "Hct",
+        "shap_value": -0.05
+      }
+    ]
+  }
+]
