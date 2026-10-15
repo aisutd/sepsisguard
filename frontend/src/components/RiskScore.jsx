@@ -28,6 +28,10 @@ function RiskScore() {
             <h3>First TFT Prediction</h3>
 
             <p>
+                Patient ID: <strong>p000619</strong>
+            </p>
+
+            <p>
                 Experimental sepsis prediction score: <strong>1.25%</strong>
             </p>
 
