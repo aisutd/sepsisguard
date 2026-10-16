@@ -1,8 +1,12 @@
+import sys
 from pathlib import Path
 
 import pandas as pd
 import xgboost as xgb
 from sklearn.metrics import average_precision_score, roc_auc_score
+
+sys.path.append(str(Path(__file__).resolve().parents[1]))  # lets us import from src/
+from evaluation.evaluate import evaluate
 
 DATA_DIR = Path("data/processed")
 MODEL_PATH = Path("models/xgb_baseline.json")
@@ -28,8 +32,7 @@ model.fit(X_train, y_train)
 
 scores = model.predict_proba(X_test)[:, 1]
 
-print(f"AUROC: {roc_auc_score(y_test, scores):.3f}")
-print(f"AUPRC: {average_precision_score(y_test, scores):.3f}  (random would be {y_test.mean():.3f})")
+evaluate(y_test, scores, name="XGBoost (default settings)")
 
 MODEL_PATH.parent.mkdir(exist_ok=True)
 model.save_model(MODEL_PATH)
