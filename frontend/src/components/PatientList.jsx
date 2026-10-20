@@ -1,65 +1,55 @@
-import { useEffect, useState } from "react"; //pulls two tools from react library
+// Shows real patients from our sample file data/sample/patients_sample.json
+// (made by src/data_pipeline/export_sample.py). 
 
-// Shows real patients from our cleaned data. The file is
-// data/processed/sample_patients.csv (made by clean_patients.py), copied into
-// frontend/public/ so the browser can load it. Risk is a placeholder until
-// Arnav's model gives us real scores.
+
+// Each patient's latest vitals from their last hour in the ICU,
+// whether they developed sepsis, and how complete their data is.
+const patients = [
+    { patient_id: "p113489", site: "B", hours_in_icu: 52, heart_rate: 101.5, resp_rate: 15.5, temperature: 37.4, developed_sepsis: true, confidence: "high" },
+    { patient_id: "p015488", site: "A", hours_in_icu: 11, heart_rate: 112.5, resp_rate: 33.75, temperature: 38.11, developed_sepsis: true, confidence: "high" },
+    { patient_id: "p009912", site: "A", hours_in_icu: 15, heart_rate: 119.0, resp_rate: 32.0, temperature: 35.94, developed_sepsis: true, confidence: "high" },
+    { patient_id: "p015617", site: "A", hours_in_icu: 18, heart_rate: 82.0, resp_rate: 16.0, temperature: 36.06, developed_sepsis: false, confidence: "high" },
+    { patient_id: "p113981", site: "B", hours_in_icu: 37, heart_rate: 62.0, resp_rate: 16.0, temperature: 36.7, developed_sepsis: false, confidence: "high" },
+    { patient_id: "p116438", site: "B", hours_in_icu: 24, heart_rate: 55.0, resp_rate: 16.0, temperature: 36.4, developed_sepsis: false, confidence: "high" },
+];
 
 function PatientList()
 {
-    const [patients, setPatients] = useState([]); //rows from the csv
-    const [error, setError] = useState(null);
-
-    useEffect(() => {
-        fetch("/sample_patients.csv") //files in frontend/public/ are served at "/"
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error(`status ${response.status}`);
-                }
-                return response.text(); //the csv as one long string
-            })
-            .then((text) => {
-                // First line is the header (column names), the rest are patients.
-                // Splitting on "," is safe here: the file only has ids and numbers.
-                const [header, ...lines] = text.trim().split("\n");
-                const columns = header.trim().split(",");
-                const rows = lines.map((line) => {
-                    const values = line.trim().split(",");
-                    // e.g. { patient_id: "p000006", site: "A", ICULOS: "19", ... }
-                    return Object.fromEntries(columns.map((col, i) => [col, values[i]]));
-                });
-                setPatients(rows.slice(0, 20)); //show the first 20 patients
-            })
-            .catch((err) => setError(err.message));
-    }, []);
-
     return(
         <section className="panel">
             <h2>Patients</h2>
 
-            {error && <p className="placeholder">Couldn't load patients: {error}</p>}
-
-            <table className="patient-table">
-                <thead>
-                    <tr>
-                        <th>Patient</th>
-                        <th>Site</th>
-                        <th>ICU hrs</th>
-                        <th>Risk</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {patients.map((p) => (
-                        <tr key={p.patient_id}>
-                            <td>{p.patient_id}</td>
-                            <td>{p.site}</td>
-                            <td>{p.ICULOS}</td>
-                            {/* placeholder: real risk score comes from Arnav's model later */}
-                            <td className="placeholder">Pending</td>
+            {/* The sidebar is narrow (280px), so only the key columns are shown.
+                Resp rate, ICU hours and confidence are still in the patients list above
+                for the detail panels to use later. */}
+            <div style={{ overflowX: "auto" }}>  {/* scroll sideways instead of spilling out */}
+                <table className="patient-table">
+                    <thead>
+                        <tr>
+                            <th>Patient</th>
+                            <th>HR</th>
+                            <th>Temp</th>
+                            <th>Sepsis</th>
+                            <th>Risk</th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {/* one table row per patient */}
+                        {patients.map((p) => (
+                            <tr key={p.patient_id}>
+                                <td>{p.patient_id}</td>
+                                <td>{p.heart_rate}</td>
+                                <td>{p.temperature}</td>
+                                {/* true/false shown as Yes/No */}
+                                <td>{p.developed_sepsis ? "Yes" : "No"}</td>
+                                {/* placeholder: real risk score comes from Arnav's model later */}
+                                <td className="placeholder">Pending</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
         </section>
     );
 }
