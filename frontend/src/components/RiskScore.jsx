@@ -25,6 +25,22 @@ function RiskScore() {
                 Risk score coming soon...
             </p>
 
+            <h3>First TFT Prediction</h3>
+
+            <p>
+                Patient ID: <strong>p000619</strong>
+            </p>
+
+            <p>
+                Experimental sepsis prediction score: <strong>1.25%</strong>
+            </p>
+
+            <p className="placeholder">
+                This is a real prediction from the updated Week 3 TFT training run.
+                It is a static example, not a live prediction.
+                The model has not been validated for clinical use.
+            </p>
+
             <h3>Data Pipeline Status</h3>
 
             {error ? (

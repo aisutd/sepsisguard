@@ -1,12 +1,12 @@
 //Neelimas work goes here
 function ShapChart(){
-    //Anikait's work
     // Baseline importance scores derived from SHAP model output
     const topFeatures = [
-        { name: "ICULOS", value: 0.19},
-        { name: "Magnesium", value: 0.14},
-        { name: "WBC", value: 0.12},
-        { name: "Glucose", value: 0.09}
+        { name: "ICULOS", value: -0.0174},
+        { name: "Temp", value: -0.0096},
+        { name: "Resp", value: -0.0069},
+        { name: "HR", value: -0.0054},
+        { name: "Lactate", value: 0.0029}
     ];
 
     return(
