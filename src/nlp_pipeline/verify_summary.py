@@ -113,6 +113,9 @@ TEMPLATE_WORDS = {"this", "patient's", "predicted", "estimated", "sepsis", "risk
                   "the", "most", "followed", "by", "and", "it"}
 ALLOWED_WORDS = TEMPLATE_WORDS | set(UP_VERBS) | set(DOWN_VERBS)
 
+WORD = re.compile(r"[A-Za-z]+(?:'[a-z]+)?")
+CAVEAT_WORDS = {w.lower() for w in WORD.findall(CAVEAT)}
+
 
 def strip_mentions(text):
     """Blank out every feature phrase, leaving only the words around them."""
@@ -176,9 +179,11 @@ def verify_summary(summary, entry):
                         problems.append(f"says '{phrase}' lowered the risk, but its SHAP value is positive")
 
     # Check 4: nothing but template wording around the feature names.
+    # A damaged caveat is already reported above, so its words are not
+    # listed a second time as unfamiliar.
+    allowed = ALLOWED_WORDS if CAVEAT in summary else ALLOWED_WORDS | CAVEAT_WORDS
     leftover = strip_mentions(body)
-    unknown = sorted({w.lower() for w in re.findall(r"[A-Za-z]+(?:'[a-z]+)?", leftover)}
-                     - ALLOWED_WORDS)
+    unknown = sorted({w.lower() for w in WORD.findall(leftover)} - allowed)
     if unknown:
         problems.append(f"uses wording the template never uses: {', '.join(unknown)}")
     if re.search(r"\d", leftover):

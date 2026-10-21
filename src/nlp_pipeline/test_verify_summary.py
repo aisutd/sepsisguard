@@ -154,6 +154,13 @@ class VerifierCatchesBadSummaries(unittest.TestCase):
         self.assertFalse(result["verified"])
         self.assertIn("is missing the caveat sentence", result["problems"])
 
+    def test_damaged_caveat_is_reported_once(self):
+        # DistilBART turned "a diagnosis" into "diagnosis". That is one problem,
+        # not ten unfamiliar words.
+        damaged = CAVEAT.replace("a diagnosis", "diagnosis")
+        result = verify_summary("Lactate raised the risk. " + damaged, PATIENT)
+        self.assertEqual(result["problems"], ["is missing the caveat sentence"])
+
     def test_caveat_cannot_hide_other_text_inside_it(self):
         altered = CAVEAT.replace("model weighed", "model weighed, due to infection")
         result = verify_summary("Lactate raised the risk. " + altered, PATIENT)
