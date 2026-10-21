@@ -5,15 +5,14 @@ each SHAP value. A summary passes ("verified": true) only if ALL of these hold:
 
   1. It names at least one feature (an empty or generic summary is useless).
   2. It names no feature outside the patient's top 5.  <- main check (Issue #26)
-  3. Any sentence that says features "raised" the risk only names features
-     with a positive SHAP value, and any "lowered" sentence only names
-     features with a negative one.
-  4. It makes no diagnostic claim ("has sepsis", "diagnosed with ...").
-     SHAP explains a model's estimate; it never confirms a diagnosis.
-  5. It brings in no clinical reason the model never saw, such as
-     "infection" or "kidney failure". These aren't features, so check 2
-     can't catch them, but they read like reasons and would mislead.
-  6. It keeps the caveat sentence (CAVEAT in generate_summary.py) word for
+  3. Every sentence that names a feature says exactly one of "raised" or
+     "lowered", and that matches the sign of each named feature's SHAP value.
+  4. Every other word is one our template uses. This is the "fail closed"
+     rule: instead of listing bad phrases (a diagnosis, an infection, a
+     measured value, a cause), we accept only wording we can account for, so
+     an unfamiliar phrase is rejected rather than waved through. It also
+     rejects numbers, which the input does not support yet.
+  5. It keeps the caveat sentence (CAVEAT in generate_summary.py) word for
      word, so no summary reaches a reader without it.
 
 Top-5 features the summary leaves out are reported as a warning but do not
@@ -99,21 +98,27 @@ def find_mentions(text):
 # Step 2: the checks
 # ---------------------------------------------------------------------------
 
-UP_WORDS = re.compile(r"\b(raised|raise|raises|increased|increase|increases|pushed up|higher)\b", re.I)
-DOWN_WORDS = re.compile(r"\b(lowered|lower|lowers|decreased|decrease|decreases|reduced|reduce|reduces|pushed down)\b", re.I)
-DIAGNOSIS_CLAIMS = re.compile(
-    r"\b(has sepsis|is septic|diagnosed with|diagnosis of sepsis|"
-    r"confirms? sepsis|will develop sepsis|sepsis is present)\b",
-    re.I,
-)
-# Clinical ideas that are NOT model inputs. A summary that offers one of them
-# as a reason is inventing it. Extend this list as new failures show up.
-OUTSIDE_CLAIMS = re.compile(
-    r"\b(infection|infected|pneumonia|bacteria\w*|kidney|renal|liver|hepatic|"
-    r"organ (?:failure|dysfunction)|septic shock|shock|dehydrat\w*|"
-    r"antibiotics?|medication|history of)\b",
-    re.I,
-)
+# The only direction words we understand. Anything else ("shifted upward",
+# "pushed down") is not accepted, because we could not check its direction.
+UP_VERBS = ["raise", "raised", "raises", "increase", "increased", "increases"]
+DOWN_VERBS = ["lower", "lowered", "lowers", "decrease", "decreased", "decreases",
+              "reduce", "reduced", "reduces"]
+UP_WORDS = re.compile(r"\b(" + "|".join(UP_VERBS) + r")\b", re.I)
+DOWN_WORDS = re.compile(r"\b(" + "|".join(DOWN_VERBS) + r")\b", re.I)
+
+# The fixed wording of the template ("... raised this patient's predicted
+# sepsis risk the most, followed by X and Y. Z lowered it."). Feature names
+# are not listed here because they are removed before this check.
+TEMPLATE_WORDS = {"this", "patient's", "predicted", "estimated", "sepsis", "risk",
+                  "the", "most", "followed", "by", "and", "it"}
+ALLOWED_WORDS = TEMPLATE_WORDS | set(UP_VERBS) | set(DOWN_VERBS)
+
+
+def strip_mentions(text):
+    """Blank out every feature phrase, leaving only the words around them."""
+    for pattern, _ in TERM_INDEX:
+        text = pattern.sub(" ", text)
+    return text
 
 
 def verify_summary(summary, entry):
@@ -128,9 +133,15 @@ def verify_summary(summary, entry):
     top = dict(parse_top_features(entry))  # column -> SHAP value
     problems, warnings = [], []
 
+    # Check 5: the caveat is present word for word. It is then removed so its
+    # own wording ("not a diagnosis") is not judged by the checks below.
+    if CAVEAT not in summary:
+        problems.append("is missing the caveat sentence")
+    body = summary.replace(CAVEAT, " ")
+
     # A mention is grounded if at least one column it could mean is in the
     # top 5 ("blood pressure" is fine if SBP, MAP or DBP is there).
-    mentions = find_mentions(summary)
+    mentions = find_mentions(body)
     mentioned = set()
     for phrase, columns in mentions:
         grounded = columns & top.keys()
@@ -143,36 +154,35 @@ def verify_summary(summary, entry):
     if not mentions:
         problems.append("names no features at all")
 
-    # Check 3: direction, one sentence at a time. A sentence with both an
-    # "up" and a "down" word is ambiguous, so we skip it and warn.
-    for sentence in re.split(r"(?<=[.!?])\s+", summary):
-        up, down = bool(UP_WORDS.search(sentence)), bool(DOWN_WORDS.search(sentence))
-        if not (up or down):
-            continue
+    # Check 3: direction, one sentence at a time.
+    for sentence in re.split(r"(?<=[.!?])\s+", body):
         named = [(p, c & top.keys()) for p, c in find_mentions(sentence)]
-        if up and down:
-            if named:
-                warnings.append(f"direction not checked (mixed wording): '{sentence}'")
+        named = [(p, c) for p, c in named if c]
+        if not named:
             continue
-        for phrase, columns in named:
-            for column in columns:
-                if up and top[column] < 0:
-                    problems.append(f"says '{phrase}' raised the risk, but its SHAP value is negative")
-                if down and top[column] > 0:
-                    problems.append(f"says '{phrase}' lowered the risk, but its SHAP value is positive")
+        up, down = bool(UP_WORDS.search(sentence)), bool(DOWN_WORDS.search(sentence))
+        if up and down:
+            problems.append(f"says both raised and lowered in one sentence, so no direction "
+                            f"can be checked: '{sentence.strip()}'")
+        elif not (up or down):
+            phrases = ", ".join(f"'{p}'" for p, _ in named)
+            problems.append(f"names {phrases} without saying whether it raised or lowered the risk")
+        else:
+            for phrase, columns in named:
+                for column in columns:
+                    if up and top[column] < 0:
+                        problems.append(f"says '{phrase}' raised the risk, but its SHAP value is negative")
+                    if down and top[column] > 0:
+                        problems.append(f"says '{phrase}' lowered the risk, but its SHAP value is positive")
 
-    # Check 4: no diagnosis.
-    claim = DIAGNOSIS_CLAIMS.search(summary)
-    if claim:
-        problems.append(f"makes a diagnostic claim: '{claim.group(0)}'")
-
-    # Check 5: no reasons from outside the model's inputs.
-    for match in OUTSIDE_CLAIMS.finditer(summary):
-        problems.append(f"brings in '{match.group(0)}', which is not a model input")
-
-    # Check 6: the caveat is present word for word.
-    if CAVEAT not in summary:
-        problems.append("is missing the caveat sentence")
+    # Check 4: nothing but template wording around the feature names.
+    leftover = strip_mentions(body)
+    unknown = sorted({w.lower() for w in re.findall(r"[A-Za-z]+(?:'[a-z]+)?", leftover)}
+                     - ALLOWED_WORDS)
+    if unknown:
+        problems.append(f"uses wording the template never uses: {', '.join(unknown)}")
+    if re.search(r"\d", leftover):
+        problems.append("contains a number, which the input does not support")
 
     # Soft check: which top features went unmentioned.
     omitted = [c for c in top if c not in mentioned]

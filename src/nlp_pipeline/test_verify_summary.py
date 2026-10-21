@@ -90,7 +90,8 @@ class TemplateTests(unittest.TestCase):
 
 class VerifierCatchesBadSummaries(unittest.TestCase):
     def assertFails(self, summary, expected_reason):
-        result = verify_summary(summary, PATIENT)
+        """The summary (with a valid caveat added) must fail for this reason."""
+        result = verify_summary(summary + " " + CAVEAT, PATIENT)
         self.assertFalse(result["verified"], summary)
         self.assertTrue(
             any(expected_reason in p for p in result["problems"]),
@@ -113,19 +114,50 @@ class VerifierCatchesBadSummaries(unittest.TestCase):
                          "says 'Temperature' raised")
         self.assertFails("Lactate lowered the risk.", "says 'Lactate' lowered")
 
-    def test_diagnostic_claim(self):
-        self.assertFails("Lactate raised the risk, so the patient has sepsis.",
-                         "diagnostic claim")
+    def test_direction_flipped_with_synonym_verbs(self):
+        self.assertFails("Temperature increased the risk.", "says 'Temperature' raised")
+        self.assertFails("Lactate decreased the risk.", "says 'Lactate' lowered")
+
+    def test_unrecognized_direction_wording_fails_closed(self):
+        # Temp has a negative SHAP value, so this is wrong, but no direction
+        # word we know appears. It must not slip through.
+        self.assertFails("Temperature shifted the risk upward.", "without saying")
+        self.assertFails("Temperature shifted the risk upward.", "shifted")
+
+    def test_mixed_direction_sentence_fails(self):
+        # Both directions are reversed here, and the sentence is ambiguous.
+        self.assertFails("Lactate lowered the risk while temperature raised it.",
+                         "both raised and lowered")
+
+    def test_diagnosis_in_any_wording_fails(self):
+        for claim in ["so the patient has sepsis", "so the patient may be septic",
+                      "and sepsis is likely", "but the patient does not have sepsis"]:
+            self.assertFails(f"Lactate raised the risk, {claim}.", "wording the template never uses")
 
     def test_reason_from_outside_the_model(self):
         self.assertFails("Lactate raised the risk, suggesting an infection.", "infection")
         self.assertFails("Lactate and possible kidney damage raised the risk.", "kidney")
+        self.assertFails("Lactate raised the risk due to poor perfusion.", "perfusion")
+
+    def test_claim_about_a_measurement(self):
+        # SHAP says nothing about whether the measured value was high.
+        self.assertFails("Lactate was high and raised the risk.", "high")
+
+    def test_numbers_are_not_accepted_yet(self):
+        self.assertFails("Lactate 5.2 raised the risk.", "contains a number")
 
     def test_no_features(self):
         self.assertFails("The model made a prediction.", "names no features")
 
     def test_missing_caveat(self):
-        self.assertFails("Lactate raised the risk.", "missing the caveat")
+        result = verify_summary("Lactate raised the risk.", PATIENT)
+        self.assertFalse(result["verified"])
+        self.assertIn("is missing the caveat sentence", result["problems"])
+
+    def test_caveat_cannot_hide_other_text_inside_it(self):
+        altered = CAVEAT.replace("model weighed", "model weighed, due to infection")
+        result = verify_summary("Lactate raised the risk. " + altered, PATIENT)
+        self.assertFalse(result["verified"])
 
 
 class VerifierAcceptsGoodSummaries(unittest.TestCase):
@@ -139,17 +171,6 @@ class VerifierAcceptsGoodSummaries(unittest.TestCase):
         result = verify_summary("Lactate raised the predicted risk." + " " + CAVEAT, PATIENT)
         self.assertTrue(result["verified"])
         self.assertIn("leaves out: ICULOS, HR, Temp, Age", result["warnings"])
-
-    def test_negated_diagnosis_is_not_a_claim(self):
-        result = verify_summary(
-            "Lactate raised the risk. This is not a diagnosis." + " " + CAVEAT, PATIENT)
-        self.assertTrue(result["verified"], result)
-
-    def test_mixed_direction_sentence_is_skipped_with_warning(self):
-        result = verify_summary(
-            "Lactate raised the risk while temperature lowered it." + " " + CAVEAT, PATIENT)
-        self.assertTrue(result["verified"], result)
-        self.assertTrue(any("mixed wording" in w for w in result["warnings"]))
 
 
 class MentionMatching(unittest.TestCase):
