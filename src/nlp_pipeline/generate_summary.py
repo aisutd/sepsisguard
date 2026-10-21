@@ -2,7 +2,11 @@
 
 Input format (Immaculate's export, data/sample/shap_top_features.json):
     {"patient_id": "p000123",
-     "top_features": [{"feature": "Lactate", "shap_value": 0.42}, ...]}
+     "top_features": [{"feature": "Lactate", "shap_value": 0.42, "value": 3.1}, ...]}
+"value" is optional. When it is there, the summary quotes it next to the
+feature name, e.g. "Lactate (3.1) raised ...". It is the number the model was
+given, which can be carried forward or filled in by the cleaning step, so the
+summary never calls it a measurement.
 
 Two ways to write the summary ("backends"):
 
@@ -15,10 +19,12 @@ Two ways to write the summary ("backends"):
              its input. Its output must pass verify_summary.py before we use it.
 
 What a SHAP value means here: a positive value pushed this patient's predicted
-sepsis risk UP and a negative value pushed it DOWN. It is NOT the patient's
+sepsis risk UP and a negative value pushed it DOWN. That sign is the only thing
+the direction words ("raised", "lowered") come from. It is NOT the patient's
 measured value (a positive SHAP for Lactate does not mean lactate is high), and
 it is NOT a diagnosis. The summary says which way each feature pushed the
-estimate and nothing about the measurements themselves.
+estimate and quotes the value the model was given, but never says whether that
+value is high or low.
 """
 
 import math
@@ -31,13 +37,29 @@ TOP_K = 5
 DISTILBART_MODEL = "sshleifer/distilbart-cnn-12-6"
 
 CAVEAT = (
-    "These reflect what the model weighed, not measured values or a diagnosis."
+    "These reflect what the model weighed, based on the values it was given, "
+    "not a diagnosis."
 )
+
+# Yes/no columns. A quoted "(1)" next to "being in a medical ICU" says nothing
+# useful, so these are described without their value.
+BINARY_FEATURES = {"Gender", "Unit1", "Unit2"}
 
 
 # ---------------------------------------------------------------------------
 # Input handling
 # ---------------------------------------------------------------------------
+
+def check_number(value, label):
+    """Raise ValueError unless value is a finite int or float."""
+    # bool is a subclass of int in Python, so rule it out explicitly.
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+    ):
+        raise ValueError(f"Invalid {label}: {value!r}")
+
 
 def parse_top_features(entry):
     """Check one patient entry and return its features, strongest first.
@@ -55,14 +77,7 @@ def parse_top_features(entry):
         value = item.get("shap_value")
 
         readable_name(name)  # raises ValueError for an unknown column
-
-        # bool is a subclass of int in Python, so rule it out explicitly.
-        if (
-            isinstance(value, bool)
-            or not isinstance(value, (int, float))
-            or not math.isfinite(value)
-        ):
-            raise ValueError(f"Invalid SHAP value for {name}: {value!r}")
+        check_number(value, f"SHAP value for {name}")
 
         if value != 0:
             features.append((name, float(value)))
@@ -76,6 +91,23 @@ def parse_top_features(entry):
     # anyway so the summary never depends on the file being in order.
     features.sort(key=lambda pair: abs(pair[1]), reverse=True)
     return features[:TOP_K]
+
+
+def parse_values(entry):
+    """Return {column: value} for every feature in the entry that has a value."""
+    values = {}
+    for item in entry["top_features"]:
+        if item.get("value") is None:
+            continue
+        check_number(item["value"], f"value for {item.get('feature')}")
+        values[item["feature"]] = float(item["value"])
+    return values
+
+
+def format_number(value):
+    """Print a value with at most 2 decimals: 110.0 -> '110', -0.031 -> '-0.03'."""
+    text = f"{value:.2f}".rstrip("0").rstrip(".")
+    return "0" if text == "-0" else text
 
 
 def join_names(names):
@@ -98,15 +130,23 @@ def template_summary(entry):
     its strongest-first order. The group with the strongest feature comes
     first, e.g.:
 
-        "Lactate raised this patient's predicted sepsis risk the most,
-        followed by time in the ICU and heart rate. Temperature and age
-        lowered it. These reflect what the model weighed, not measured
-        values or a diagnosis."
+        "Lactate (3.1) raised this patient's predicted sepsis risk the most,
+        followed by time in the ICU (42) and heart rate (118). Temperature
+        (36.2) and age (71) lowered it. These reflect what the model weighed,
+        based on the values it was given, not a diagnosis."
     """
     features = parse_top_features(entry)
+    values = parse_values(entry)
 
-    raised = [readable_name(f) for f, v in features if v > 0]
-    lowered = [readable_name(f) for f, v in features if v < 0]
+    def label(column):
+        """The readable name, followed by the model's input value when we have one."""
+        name = readable_name(column)
+        if column in values and column not in BINARY_FEATURES:
+            return f"{name} ({format_number(values[column])})"
+        return name
+
+    raised = [label(f) for f, v in features if v > 0]
+    lowered = [label(f) for f, v in features if v < 0]
 
     # The group holding the single strongest feature goes first, so its
     # first name is the strongest overall and "the most" is true.
@@ -180,11 +220,11 @@ if __name__ == "__main__":
     example = {
         "patient_id": "demo",
         "top_features": [
-            {"feature": "Lactate", "shap_value": 0.42},
-            {"feature": "ICULOS", "shap_value": 0.31},
-            {"feature": "HR", "shap_value": 0.18},
-            {"feature": "Temp", "shap_value": -0.12},
-            {"feature": "Age", "shap_value": -0.05},
+            {"feature": "Lactate", "shap_value": 0.42, "value": 3.1},
+            {"feature": "ICULOS", "shap_value": 0.31, "value": 42},
+            {"feature": "HR", "shap_value": 0.18, "value": 118},
+            {"feature": "Temp", "shap_value": -0.12, "value": 36.2},
+            {"feature": "Age", "shap_value": -0.05, "value": 71},
         ],
     }
     print(generate_summary(example))

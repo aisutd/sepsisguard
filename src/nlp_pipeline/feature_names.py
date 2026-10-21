@@ -50,7 +50,8 @@ FEATURES = {
     "Gender": ("sex", ["gender"]),
     "Unit1": ("being in a medical ICU", ["MICU", "medical ICU"]),
     "Unit2": ("being in a surgical ICU", ["SICU", "surgical ICU"]),
-    "HospAdmTime": ("time since hospital admission", ["hospital admission"]),
+    "HospAdmTime": ("time between hospital and ICU admission",
+                    ["hospital admission", "HospAdmTime"]),
     "ICULOS": ("time in the ICU", ["ICU length of stay", "ICULOS", "time in ICU"]),
 }
 
