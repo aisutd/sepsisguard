@@ -14,9 +14,10 @@ Two ways to write the summary ("backends"):
              Every word comes from the input or from fixed text we wrote, so
              it cannot invent a feature. Fast, needs no model download.
 
-  distilbart Writes the template text first, then asks DistilBART to rephrase
-             it. Kept so we can measure how often a language model drifts from
-             its input. Its output must pass verify_summary.py before we use it.
+  distilbart Writes the template's feature sentences first, then asks
+             DistilBART to rephrase them and adds the caveat itself. Kept so we
+             can measure how often a language model drifts from its input. Its
+             output must pass verify_summary.py before we use it.
 
 What a SHAP value means here: a positive value pushed this patient's predicted
 sepsis risk UP and a negative value pushed it DOWN. That sign is the only thing
@@ -123,8 +124,8 @@ def join_names(names):
 # Backend 1: template
 # ---------------------------------------------------------------------------
 
-def template_summary(entry):
-    """Build the summary from a fixed sentence pattern.
+def template_body(entry):
+    """Build the feature sentences (everything except the caveat) from a fixed pattern.
 
     Features are split by the sign of their SHAP value and each group keeps
     its strongest-first order. The group with the strongest feature comes
@@ -132,8 +133,9 @@ def template_summary(entry):
 
         "Lactate (3.1) raised this patient's predicted sepsis risk the most,
         followed by time in the ICU (42) and heart rate (118). Temperature
-        (36.2) and age (71) lowered it. These reflect what the model weighed,
-        based on the values it was given, not a diagnosis."
+        (36.2) and age (71) lowered it."
+
+    template_summary() adds the caveat after this.
     """
     features = parse_top_features(entry)
     values = parse_values(entry)
@@ -167,11 +169,15 @@ def template_summary(entry):
             sentences.append(f"{lead[0]} {lead_verb} {risk}.")
     if other:
         sentences.append(f"{join_names(other)} {other_verb} it.")
-    sentences.append(CAVEAT)
 
     # Capitalize the first letter of each sentence without touching the
     # rest (lowercasing would break names like "AST" or "troponin I").
     return " ".join(s[0].upper() + s[1:] for s in sentences)
+
+
+def template_summary(entry):
+    """The finished template summary: the feature sentences, then the caveat."""
+    return f"{template_body(entry)} {CAVEAT}"
 
 
 # ---------------------------------------------------------------------------
@@ -189,18 +195,25 @@ def load_summarizer():
 
 
 def distilbart_summary(entry):
-    """Give DistilBART the template text and return its rewrite.
+    """Give DistilBART the template's feature sentences and return its rewrite.
 
-    No checking happens here on purpose: verify_summary.py decides whether
-    the output is safe to show.
+    The caveat is fixed text, so it is added here and never given to the
+    model. In a first run on 50 patients, DistilBART dropped it from 39 of 50
+    summaries because a summarizer cuts what looks like filler.
+
+    Nothing else is checked here on purpose: verify_summary.py decides
+    whether the output is safe to show.
     """
-    source_text = template_summary(entry)
+    source_text = template_body(entry)
     result = load_summarizer()(
         source_text, min_length=10, max_length=80, do_sample=False
     )
     text = result[0]["summary_text"].strip()
     # DistilBART sometimes puts a space before punctuation ("rate ." -> "rate.").
-    return re.sub(r"\s+([.,!?;:])", r"\1", text)
+    text = re.sub(r"\s+([.,!?;:])", r"\1", text)
+    if text[-1] not in ".!?":
+        text += "."  # so the caveat starts a new sentence
+    return f"{text} {CAVEAT}"
 
 
 BACKENDS = {

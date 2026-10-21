@@ -267,6 +267,21 @@ class VerifierAcceptsGoodSummaries(unittest.TestCase):
         self.assertIn("leaves out: ICULOS, HR, Temp, Age", result["warnings"])
 
 
+class DistilbartBackend(unittest.TestCase):
+    def test_caveat_is_added_by_code_not_left_to_the_model(self):
+        # Whatever the model returns, the summary ends with the exact caveat,
+        # and a missing final full stop does not glue it to the last sentence.
+        for model_text in ["Lactate (3.1) raised the risk.", "Lactate (3.1) raised the risk"]:
+            fake = mock.Mock(return_value=[{"summary_text": model_text}])
+            with mock.patch.object(generator, "load_summarizer", return_value=fake):
+                summary = generator.distilbart_summary(PATIENT)
+            self.assertEqual(summary, "Lactate (3.1) raised the risk. " + CAVEAT)
+        # The model is given the feature sentences only, not the caveat.
+        given = fake.call_args.args[0]
+        self.assertNotIn("model weighed", given)
+        self.assertTrue(given.startswith("Lactate (3.1) raised this patient's"))
+
+
 class FailureTypes(unittest.TestCase):
     def types(self, text):
         return verify_summary(text + " " + CAVEAT, PATIENT)["failure_types"]
