@@ -190,7 +190,7 @@
         "shap_value": 0.17
       },
       {
-        "feature": "Fibrinogen",
+        "feature": "Calcium",
         "shap_value": -0.1
       },
       {
@@ -253,11 +253,11 @@
     "patient_id": "mock_p011",
     "top_features": [
       {
-        "feature": "TroponinI",
+        "feature": "Creatinine",
         "shap_value": 0.3
       },
       {
-        "feature": "EtCO2",
+        "feature": "Glucose",
         "shap_value": -0.18
       },
       {
@@ -290,7 +290,7 @@
         "shap_value": 0.09
       },
       {
-        "feature": "Bilirubin_direct",
+        "feature": "AST",
         "shap_value": 0.07
       },
       {

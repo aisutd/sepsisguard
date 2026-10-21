@@ -1,7 +1,8 @@
 """Feature vocabulary shared by the summary generator and the verifier.
 
-Every feature the baseline model can use (the PhysioNet 2019 columns) is listed
-here with:
+Every feature the baseline model uses (the 36 columns left after
+clean_patients.py; it drops EtCO2, Bilirubin_direct, TroponinI and Fibrinogen
+because each is missing in over 95% of rows) is listed here with:
   - a readable name the generator writes into summaries, and
   - aliases: other ways the same feature might be written in free text.
 
@@ -20,13 +21,12 @@ FEATURES = {
     "MAP": ("mean arterial pressure", ["MAP"]),
     "DBP": ("diastolic blood pressure", ["diastolic", "DBP"]),
     "Resp": ("respiratory rate", ["breathing rate", "respiration"]),
-    "EtCO2": ("end-tidal CO2", ["EtCO2", "end tidal CO2"]),
     # Lab results
     "BaseExcess": ("base excess", []),
     "HCO3": ("bicarbonate", ["HCO3"]),
     "FiO2": ("fraction of inspired oxygen", ["FiO2", "inspired oxygen"]),
     "pH": ("blood pH", ["pH"]),
-    "PaCO2": ("arterial CO2 pressure", ["PaCO2"]),
+    "PaCO2": ("arterial CO2 pressure", ["PaCO2", "CO2"]),
     "SaO2": ("arterial oxygen saturation", ["SaO2"]),
     "AST": ("AST", ["aspartate aminotransferase"]),
     "BUN": ("blood urea nitrogen", ["BUN", "urea"]),
@@ -34,19 +34,16 @@ FEATURES = {
     "Calcium": ("calcium", []),
     "Chloride": ("chloride", []),
     "Creatinine": ("creatinine", []),
-    "Bilirubin_direct": ("direct bilirubin", []),
     "Glucose": ("glucose", ["blood sugar"]),
     "Lactate": ("lactate", ["lactic acid"]),
     "Magnesium": ("magnesium", []),
     "Phosphate": ("phosphate", []),
     "Potassium": ("potassium", []),
-    "Bilirubin_total": ("total bilirubin", []),
-    "TroponinI": ("troponin I", ["troponin"]),
+    "Bilirubin_total": ("total bilirubin", ["bilirubin"]),
     "Hct": ("hematocrit", ["Hct"]),
     "Hgb": ("hemoglobin", ["Hgb"]),
     "PTT": ("partial thromboplastin time", ["PTT"]),
     "WBC": ("white blood cell count", ["WBC", "white cell count", "leukocytes"]),
-    "Fibrinogen": ("fibrinogen", []),
     "Platelets": ("platelet count", ["platelets"]),
     # Demographics and timing
     "Age": ("age", []),
@@ -62,9 +59,7 @@ FEATURES = {
 # grounded if ANY of those is in the patient's top 5.
 GROUP_TERMS = {
     "blood pressure": {"SBP", "MAP", "DBP"},
-    "bilirubin": {"Bilirubin_direct", "Bilirubin_total"},
     "oxygen": {"O2Sat", "SaO2", "FiO2"},
-    "CO2": {"EtCO2", "PaCO2"},
     "ICU type": {"Unit1", "Unit2"},
     "ICU unit": {"Unit1", "Unit2"},
 }
