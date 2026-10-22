@@ -1,8 +1,9 @@
 """Feature vocabulary shared by the summary generator and the verifier.
 
-Every feature the baseline model uses (the 36 columns left after
-clean_patients.py; it drops EtCO2, Bilirubin_direct, TroponinI and Fibrinogen
-because each is missing in over 95% of rows) is listed here with:
+Every input column of the baseline model (36 of them: the PhysioNet 2019 columns
+that clean_patients.py keeps, plus ICULOS; it drops EtCO2, Bilirubin_direct,
+TroponinI and Fibrinogen because each is missing in over 95% of rows) is listed
+here with:
   - a readable name the generator writes into summaries, and
   - aliases: other ways the same feature might be written in free text.
 
@@ -50,7 +51,8 @@ FEATURES = {
     "Gender": ("sex", ["gender"]),
     "Unit1": ("being in a medical ICU", ["MICU", "medical ICU"]),
     "Unit2": ("being in a surgical ICU", ["SICU", "surgical ICU"]),
-    "HospAdmTime": ("time since hospital admission", ["hospital admission"]),
+    "HospAdmTime": ("time between hospital and ICU admission",
+                    ["hospital admission", "HospAdmTime"]),
     "ICULOS": ("time in the ICU", ["ICU length of stay", "ICULOS", "time in ICU"]),
 }
 
