@@ -2,11 +2,12 @@
 
 Input format (Immaculate's export, data/sample/shap_top_features.json):
     {"patient_id": "p000123",
-     "top_features": [{"feature": "Lactate", "shap_value": 0.42, "value": 3.1}, ...]}
-"value" is optional. When it is there, the summary quotes it next to the
-feature name, e.g. "Lactate (3.1) raised ...". It is the number the model was
-given, which can be carried forward or filled in by the cleaning step, so the
-summary never calls it a measurement.
+     "top_features": [{"feature": "Lactate", "shap_value": 0.42}, ...]}
+Each feature may also carry a "value", as in
+data/sample/shap_top_features_with_values.json (see export_values.py). When it
+is there, the summary quotes it next to the feature name, e.g. "Lactate (3.1)
+raised ...". It is the number the model was given, which can be carried forward
+or filled in by the cleaning step, so the summary never calls it a measurement.
 
 Two ways to write the summary ("backends"):
 
@@ -211,7 +212,7 @@ def distilbart_summary(entry):
     text = result[0]["summary_text"].strip()
     # DistilBART sometimes puts a space before punctuation ("rate ." -> "rate.").
     text = re.sub(r"\s+([.,!?;:])", r"\1", text)
-    if text[-1] not in ".!?":
+    if text and text[-1] not in ".!?":
         text += "."  # so the caveat starts a new sentence
     return f"{text} {CAVEAT}"
 
