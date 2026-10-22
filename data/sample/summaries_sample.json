@@ -1,0 +1,62 @@
+[
+  {
+    "patient_id": "p000011",
+    "summary": "Time in the ICU lowered this patient's predicted sepsis risk the most, followed by temperature, respiratory rate, and heart rate. Lactate raised it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "verified": true,
+    "backend": "template"
+  },
+  {
+    "patient_id": "p000011",
+    "summary": "Time in the ICU lowered this patient's predicted sepsis risk the most, followed by temperature, respiratory rate, and heart rate. Lactate raised it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "verified": true,
+    "backend": "template"
+  },
+  {
+    "patient_id": "p000011",
+    "summary": "Temperature raised this patient's predicted sepsis risk the most, followed by lactate. Time in the ICU, heart rate, and respiratory rate lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "verified": true,
+    "backend": "template"
+  },
+  {
+    "patient_id": "p000011",
+    "summary": "Temperature raised this patient's predicted sepsis risk the most, followed by lactate. Time in the ICU, heart rate, and respiratory rate lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "verified": true,
+    "backend": "template"
+  },
+  {
+    "patient_id": "p000011",
+    "summary": "Temperature raised this patient's predicted sepsis risk the most, followed by lactate. Time in the ICU, heart rate, and respiratory rate lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "verified": true,
+    "backend": "template"
+  },
+  {
+    "patient_id": "p000006",
+    "summary": "Lactate lowered this patient's predicted sepsis risk the most, followed by respiratory rate and temperature. Time in the ICU and heart rate raised it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "verified": true,
+    "backend": "template"
+  },
+  {
+    "patient_id": "p000006",
+    "summary": "Time in the ICU raised this patient's predicted sepsis risk the most, followed by heart rate, respiratory rate, and lactate. Temperature lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "verified": true,
+    "backend": "template"
+  },
+  {
+    "patient_id": "p000006",
+    "summary": "Time in the ICU raised this patient's predicted sepsis risk the most, followed by heart rate, respiratory rate, and lactate. Temperature lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "verified": true,
+    "backend": "template"
+  },
+  {
+    "patient_id": "p000006",
+    "summary": "Time in the ICU raised this patient's predicted sepsis risk the most, followed by respiratory rate, heart rate, and lactate. Temperature lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "verified": true,
+    "backend": "template"
+  },
+  {
+    "patient_id": "p000006",
+    "summary": "Time in the ICU raised this patient's predicted sepsis risk the most, followed by respiratory rate and systolic blood pressure. Temperature and heart rate lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "verified": true,
+    "backend": "template"
+  }
+]
