@@ -27,7 +27,9 @@ function SummaryCard() {
       })
       .then((data) => {
         setRecords(data);
-        setPatientId(data[0].patient_id);
+        // Open on p000011, the patient the SHAP chart beside this card shows.
+        const first = data.find((r) => r.patient_id === "p000011") ?? data[0];
+        setPatientId(first.patient_id);
       })
       .catch(() => setError(true));
   }, []);
