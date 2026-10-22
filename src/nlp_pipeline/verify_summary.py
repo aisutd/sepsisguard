@@ -228,6 +228,11 @@ def verify_summary(summary, entry):
 
     # Checks 3 and 4, one sentence at a time.
     for sentence in re.split(r"(?<=[.!?])\s+", body):
+        # Numbers are checked in every sentence, so a bare number cannot hide
+        # in one that names no feature.
+        for message in check_numbers(sentence, top, values):
+            fail("wrong_number", message)
+
         named = [(p, c & top.keys()) for p, c in find_mentions(sentence)]
         named = [(p, c) for p, c in named if c]
         if not named:
@@ -246,8 +251,6 @@ def verify_summary(summary, entry):
                         fail("wrong_direction", f"says '{phrase}' raised the risk, but its SHAP value is negative")
                     if down and top[column] > 0:
                         fail("wrong_direction", f"says '{phrase}' lowered the risk, but its SHAP value is positive")
-        for message in check_numbers(sentence, top, values):
-            fail("wrong_number", message)
 
     # Check 5: nothing but template wording around the feature names. A
     # damaged caveat is already reported above, so its words are not listed

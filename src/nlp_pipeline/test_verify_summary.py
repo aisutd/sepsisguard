@@ -4,8 +4,9 @@ Run from the repo root (standard library only, no extra packages):
     python -m unittest discover -s src/nlp_pipeline -v
 
 The "bad summary" cases imitate the mistakes a language model makes when
-rewriting the input: adding a feature, swapping a direction, using a synonym
-for a feature that isn't there, or turning a risk estimate into a diagnosis.
+rewriting the input: adding a feature, swapping a direction, quoting the wrong
+number, using a synonym for a feature that isn't there, or turning a risk
+estimate into a diagnosis.
 """
 
 import json
@@ -211,6 +212,10 @@ class VerifierCatchesBadSummaries(unittest.TestCase):
 
     def test_number_with_no_feature_before_it(self):
         self.assertFails("About 118 raised the risk, and lactate did too.", "without a feature name before it")
+
+    def test_number_in_a_sentence_with_no_feature_fails(self):
+        # A bare number has no words for the wording check to object to.
+        self.assertFails("Lactate (3.1) raised the risk. 42.", "without a feature name before it")
 
     def test_quoting_the_shap_value_instead_of_the_value_fails(self):
         self.assertFails("Lactate (0.42) raised the risk.", "says 'Lactate' is 0.42")
