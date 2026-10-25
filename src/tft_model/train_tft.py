@@ -14,6 +14,8 @@ from lightning.pytorch import Trainer, seed_everything
 from pytorch_forecasting import TemporalFusionTransformer
 from pytorch_forecasting.metrics import CrossEntropy
 from sklearn.metrics import roc_auc_score, average_precision_score
+from lightning.pytorch.callbacks import ModelCheckpoint
+from lightning.pytorch.loggers import CSVLogger
 
 # Vital signs recorded for patients
 VITALS = [
@@ -38,6 +40,8 @@ DEMOGRAPHICS = [
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 TRAIN_PATH = PROJECT_ROOT / "data/processed/train.csv"
+SPLIT_PATH = Path.home() / "sepsisguard_runs/week4/patient_split.csv"
+RUNS_DIR = Path.home() / "sepsisguard_runs" / "week4" # Keeps checkpoints saved outside github
 
 
 # Get cleaned data from paitents with 24+ hours of it, then select 1000 paitents at random
@@ -77,6 +81,55 @@ def load_training_sample(n_patients=1000):
     ).reset_index(drop=True)
 
     return data
+
+
+# Load the same patient data but change the prediction target.
+def load_training_horizon(horizon="6h", n_patients=50000):
+
+    # Load the original data using the same patient selection.
+    data = load_training_sample(n_patients=n_patients)
+
+    # The original SepsisLabel is already the 6h target.
+    if horizon == "6h":
+        return data
+
+    if horizon != "12h":
+        raise ValueError("Horizon must be '6h' or '12h'.")
+
+    # Load only Maritza's labels, not her additional trend features.
+    keys = ["site", "patient_id", "ICULOS"]
+
+    labels = pd.read_csv(
+        PROJECT_ROOT / "data/processed/train_features.csv",
+        usecols=keys + ["label_6h", "label_12h"],
+    )
+
+    # Check that each patient-hour occurs only once.
+    if labels.duplicated(keys).any():
+        raise ValueError("Duplicate patient-hours in label file.")
+
+    # Match each new label to the correct patient and hour.
+    data = data.merge(
+        labels,
+        on=keys,
+        how="left",
+        validate="one_to_one",
+    )
+
+    if data[["label_6h", "label_12h"]].isna().any().any():
+        raise ValueError("Some patient-hours are missing labels.")
+
+    # Confirm the original 6h labels still match.
+    if not (data["SepsisLabel"] == data["label_6h"]).all():
+        raise ValueError("6h labels do not match.")
+
+    if not data["label_12h"].isin([0, 1]).all():
+        raise ValueError("12h target must contain only 0 and 1.")
+
+    # Replace only the target. Keep all the original features.
+    data["SepsisLabel"] = data["label_12h"].astype(int)
+
+    return data.drop(columns=["label_6h", "label_12h"])
 
 # Split paitents into 80% for training and 20% for validation
 # However, blindly splitting might cause a set to have no positive sepsis paitents
@@ -133,6 +186,44 @@ def split_train_validation(data):
 
     return train_data, val_data
 
+
+# Reuse the same patients for the 6-hour and 12-hour models.
+def load_fixed_split(data):
+
+    # Load the patient assignments saved earlier.
+    patient_splits = pd.read_csv(SPLIT_PATH)
+
+    # Make sure each patient has only one assignment.
+    if patient_splits.duplicated(["site", "patient_id"]).any():
+        raise ValueError("Duplicate patient IDs in saved split.")
+
+    # Attach each patient's assigned group to their hourly records.
+    data = data.merge(
+        patient_splits,
+        on=["site", "patient_id"],
+        how="left",
+        validate="many_to_one",
+    )
+
+    # Stop if any patient is missing from the saved split.
+    if data["split"].isna().any():
+        raise ValueError("Some patients are missing from the saved split.")
+
+    if not data["split"].isin(["train", "validation"]).all():
+        raise ValueError("Invalid split assignment.")
+
+    # Separate training and validation patient records.
+    train_data = data[data["split"] == "train"].drop(
+        columns=["split"]
+    ).copy()
+
+    val_data = data[data["split"] == "validation"].drop(
+        columns=["split"]
+    ).copy()
+
+    return train_data, val_data
+
+
 #Same function as seen in prepare_data.py but now using binary classification
 def create_dataloaders(train_data, val_data, batch_size=32):
 
@@ -166,8 +257,8 @@ def create_dataloaders(train_data, val_data, batch_size=32):
 
         time_varying_known_reals=["ICULOS"],
         time_varying_unknown_reals=VITALS + LABS,
-        time_varying_unknown_categoricals=["SepsisClass"],
-
+        # Sepsis labels are retrospective and must not be model inputs.
+        time_varying_unknown_categoricals=[],
         target_normalizer=NaNLabelEncoder(),
     )
 
@@ -195,7 +286,13 @@ def create_dataloaders(train_data, val_data, batch_size=32):
     return train_dataset, val_dataset, train_loader, val_loader
 
 #Initialize and run TFT
-def train_model(train_dataset, train_loader, val_loader):
+def train_model(
+    train_dataset,
+    train_loader,
+    val_loader,
+    run_name="tft_6h",
+    max_epochs=3,
+):
 
     # Make the training run reproducible
     seed_everything(42, workers=True)
@@ -217,17 +314,38 @@ def train_model(train_dataset, train_loader, val_loader):
     print("\nTFT parameters:", tft.size())
 
     # Configure a small training run
+    
+    # Save the best model and latest checkpoint after training.
+    checkpoint = ModelCheckpoint(
+        dirpath=RUNS_DIR / "checkpoints" / run_name,
+        filename="epoch{epoch:02d}-loss{val_loss:.4f}",
+        monitor="val_loss",
+        mode="min",
+        save_top_k=1,
+        save_last=True,
+        auto_insert_metric_name=False,
+    )
+
+    # Record training and validation metrics for each epoch.
+    logger = CSVLogger(
+        save_dir=str(RUNS_DIR / "logs"),
+        name=run_name,
+    )
+
+    # Train using the Mac's GPU.
     trainer = Trainer(
-        max_epochs=3,
-        accelerator="cpu",
+        max_epochs=max_epochs,
+        accelerator="mps",
         devices=1,
-        limit_train_batches=100,
-        limit_val_batches=130,
+        limit_train_batches=1.0,
+        limit_val_batches=1.0,
         gradient_clip_val=0.1,
         num_sanity_val_steps=0,
-        logger=False,
-        enable_checkpointing=False,
+        logger=logger,
+        callbacks=[checkpoint],
+        enable_checkpointing=True,
     )
+
 
     # Train the model and evaluate on validation batches
     trainer.fit(
@@ -243,7 +361,17 @@ def train_model(train_dataset, train_loader, val_loader):
         if "loss" in name:
             print(f"{name}: {value.item():.4f}")
 
-    return tft
+
+    print("Best checkpoint:", checkpoint.best_model_path)
+    print("Latest checkpoint:", checkpoint.last_model_path)
+    print("Training logs:", logger.log_dir)
+
+    # Load the model with the lowest validation loss.
+    best_tft = TemporalFusionTransformer.load_from_checkpoint(
+        checkpoint.best_model_path
+    )
+
+    return best_tft
 
 
 def generate_predictions(tft, train_dataset):
@@ -298,7 +426,7 @@ def generate_predictions(tft, train_dataset):
         test_dataset,
         mode=("raw", "prediction"),
         return_index=True,
-        trainer_kwargs={"accelerator": "cpu", "devices": 1}
+        trainer_kwargs={"accelerator": "mps", "devices": 1}
     )
 
     # Convert class logits into probabilities
@@ -426,12 +554,204 @@ def evaluate_model(tft, train_dataset):
 
     return auroc, auprc
 
+# score the entire dataset
+
+def export_full_test_scores(horizon="6h"):
+
+    """Generate risk scores for every eligible test patient-hour."""
+
+    # Only allow the two required prediction horizons.
+    if horizon not in ["6h", "12h"]:
+        raise ValueError("Horizon must be '6h' or '12h'.")
+
+    # Select the best checkpoint for the requested horizon.
+    checkpoint_names = {
+        "6h": "epoch00-loss0.1009.ckpt",
+        "12h": "epoch00-loss0.1443.ckpt",
+    }
+
+    checkpoint_path = (
+        RUNS_DIR
+        / "checkpoints"
+        / f"tft_{horizon}"
+        / checkpoint_names[horizon]
+    )
+
+    if not checkpoint_path.exists():
+        raise FileNotFoundError(checkpoint_path)
+
+    # Load the trained TFT without retraining.
+    tft = TemporalFusionTransformer.load_from_checkpoint(
+        checkpoint_path
+    )
+
+    # Load the original test data and keep the same input features.
+    test_data = pd.read_csv(
+        PROJECT_ROOT / "data/processed/test.csv"
+    )
+
+    patient_cols = ["site", "patient_id"]
+    row_cols = patient_cols + ["ICULOS"]
+
+    # Each patient should have one record per ICU hour.
+    if test_data.duplicated(row_cols).any():
+        raise ValueError("Duplicate patient-hours in test.csv.")
+
+    total_patients = test_data.groupby(patient_cols).ngroups
+    total_hours = len(test_data)
+
+    # For 12h, load Maritza's labels and change only the target.
+    if horizon == "12h":
+        labels = pd.read_csv(
+            PROJECT_ROOT / "data/processed/test_features.csv",
+            usecols=row_cols + ["label_6h", "label_12h"],
+        )
+
+        if labels.duplicated(row_cols).any():
+            raise ValueError("Duplicate patient-hours in label file.")
+
+        # Attach labels to the correct patient and hour.
+        test_data = test_data.merge(
+            labels,
+            on=row_cols,
+            how="left",
+            validate="one_to_one",
+        )
+
+        # Make sure all required labels are present.
+        if test_data[["label_6h", "label_12h"]].isna().any().any():
+            raise ValueError("Missing 12h labels.")
+
+        # Verify that the original 6h labels haven't changed.
+        if not (
+            test_data["SepsisLabel"] == test_data["label_6h"]
+        ).all():
+            raise ValueError("Original 6h labels do not match.")
+
+        if not test_data["label_12h"].isin([0, 1]).all():
+            raise ValueError("Invalid 12h labels.")
+
+        # Replace the target with the 12h warning label.
+        test_data["SepsisLabel"] = (
+            test_data["label_12h"].astype(int)
+        )
+
+        # Don't include the horizon labels as model features.
+        test_data = test_data.drop(
+            columns=["label_6h", "label_12h"]
+        )
+
+    # Convert the selected target to a classification label.
+    test_data["SepsisClass"] = (
+        test_data["SepsisLabel"].astype(int).astype(str)
+    )
+
+    test_data = test_data.sort_values(
+        row_cols
+    ).reset_index(drop=True)
+
+    # Reuse the training dataset's encoders and scalers.
+    test_dataset = TimeSeriesDataSet.from_parameters(
+        tft.dataset_parameters,
+        test_data,
+        predict=False,
+        stop_randomization=True,
+    )
+
+    # Create batches for full test-set prediction.
+    test_loader = test_dataset.to_dataloader(
+        train=False,
+        batch_size=64,
+        num_workers=0,
+    )
+
+    # Predict every eligible patient-hour on the M5 GPU.
+    predictions = tft.predict(
+        test_loader,
+        mode=("raw", "prediction"),
+        return_index=True,
+        return_y=True,
+        trainer_kwargs={
+            "accelerator": "mps",
+            "devices": 1,
+            "logger": False,
+        },
+    )
+
+    # Identify the positive sepsis class.
+    positive_class = (
+        test_dataset.target_normalizer.classes_["1"]
+    )
+
+    # Convert the model's logits into predicted probabilities.
+    scores = torch.softmax(
+        predictions.output,
+        dim=-1,
+    )[..., positive_class].reshape(-1).cpu().numpy()
+
+    # Retrieve the actual target for each prediction.
+    true_labels = (
+        predictions.y[0]
+        .reshape(-1)
+        .cpu()
+        .numpy()
+        .astype(int)
+    )
+
+    # Match risk scores to patient IDs and prediction hours.
+    results = predictions.index[row_cols].copy()
+    results["y_true"] = true_labels
+    results["risk_score"] = scores
+
+    # Verify that every score matches the correct patient-hour.
+    aligned = results.merge(
+        test_data[row_cols + ["SepsisLabel"]],
+        on=row_cols,
+        how="left",
+        validate="one_to_one",
+    )
+
+    if aligned["SepsisLabel"].isna().any():
+        raise ValueError("Some predictions have no matching labels.")
+
+    if not (
+        aligned["y_true"] == aligned["SepsisLabel"]
+    ).all():
+        raise ValueError("Predictions and labels are misaligned.")
+
+    if not results["risk_score"].between(0, 1).all():
+        raise ValueError("Invalid probability scores.")
+
+    # Save the scores to a horizon-specific CSV.
+    output_path = (
+        PROJECT_ROOT
+        / "data/processed"
+        / f"tft_scores_{horizon}.csv"
+    )
+
+    results.to_csv(output_path, index=False)
+
+    # Report which patient-hours the TFT could not score.
+    scored_patients = results.groupby(patient_cols).ngroups
+
+    print(f"\nFull {horizon} test-set scoring complete!")
+    print("Total test patients:", total_patients)
+    print("Patients scored:", scored_patients)
+    print("Patients not scored:", total_patients - scored_patients)
+    print("Total test hours:", total_hours)
+    print("Hours scored:", len(results))
+    print("Hours not scored:", total_hours - len(results))
+    print("Positive hours scored:", int(true_labels.sum()))
+    print("Saved to:", output_path)
+
+    return results
+
 # What runs when script is ran in order to check everything is correct
 if __name__ == "__main__":
 
-    data = load_training_sample()
+    data = load_training_sample(n_paitents=23823)
 
-    train_data, val_data = split_train_validation(data)
+    train_data, val_data = load_fixed_split(data)
 
     print("Total patients:", data.groupby(
         ["site", "patient_id"]
