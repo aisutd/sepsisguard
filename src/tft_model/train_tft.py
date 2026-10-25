@@ -14,6 +14,8 @@ from lightning.pytorch import Trainer, seed_everything
 from pytorch_forecasting import TemporalFusionTransformer
 from pytorch_forecasting.metrics import CrossEntropy
 from sklearn.metrics import roc_auc_score, average_precision_score
+from lightning.pytorch.callbacks import ModelCheckpoint
+from lightning.pytorch.loggers import CSVLogger
 
 # Vital signs recorded for patients
 VITALS = [
@@ -39,6 +41,7 @@ DEMOGRAPHICS = [
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 TRAIN_PATH = PROJECT_ROOT / "data/processed/train.csv"
 SPLIT_PATH = Path.home() / "sepsisguard_runs/week4/patient_split.csv"
+RUNS_DIR = Path.home() / "sepsisguard_runs" / "week4" # Keeps checkpoints saved outside github
 
 
 # Get cleaned data from paitents with 24+ hours of it, then select 1000 paitents at random
@@ -234,7 +237,13 @@ def create_dataloaders(train_data, val_data, batch_size=32):
     return train_dataset, val_dataset, train_loader, val_loader
 
 #Initialize and run TFT
-def train_model(train_dataset, train_loader, val_loader):
+def train_model(
+    train_dataset,
+    train_loader,
+    val_loader,
+    run_name="tft_6h",
+    max_epochs=3,
+):
 
     # Make the training run reproducible
     seed_everything(42, workers=True)
@@ -256,17 +265,38 @@ def train_model(train_dataset, train_loader, val_loader):
     print("\nTFT parameters:", tft.size())
 
     # Configure a small training run
+    
+    # Save the best model and latest checkpoint after training.
+    checkpoint = ModelCheckpoint(
+        dirpath=RUNS_DIR / "checkpoints" / run_name,
+        filename="epoch{epoch:02d}-loss{val_loss:.4f}",
+        monitor="val_loss",
+        mode="min",
+        save_top_k=1,
+        save_last=True,
+        auto_insert_metric_name=False,
+    )
+
+    # Record training and validation metrics for each epoch.
+    logger = CSVLogger(
+        save_dir=str(RUNS_DIR / "logs"),
+        name=run_name,
+    )
+
+    # Train using the Mac's GPU.
     trainer = Trainer(
-        max_epochs=1,
+        max_epochs=max_epochs,
         accelerator="mps",
         devices=1,
         limit_train_batches=1.0,
         limit_val_batches=1.0,
         gradient_clip_val=0.1,
         num_sanity_val_steps=0,
-        logger=False,
-        enable_checkpointing=False,
+        logger=logger,
+        callbacks=[checkpoint],
+        enable_checkpointing=True,
     )
+
 
     # Train the model and evaluate on validation batches
     trainer.fit(
@@ -282,7 +312,17 @@ def train_model(train_dataset, train_loader, val_loader):
         if "loss" in name:
             print(f"{name}: {value.item():.4f}")
 
-    return tft
+
+    print("Best checkpoint:", checkpoint.best_model_path)
+    print("Latest checkpoint:", checkpoint.last_model_path)
+    print("Training logs:", logger.log_dir)
+
+    # Load the model with the lowest validation loss.
+    best_tft = TemporalFusionTransformer.load_from_checkpoint(
+        checkpoint.best_model_path
+    )
+
+    return best_tft
 
 
 def generate_predictions(tft, train_dataset):
