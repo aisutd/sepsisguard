@@ -208,8 +208,8 @@ def create_dataloaders(train_data, val_data, batch_size=32):
 
         time_varying_known_reals=["ICULOS"],
         time_varying_unknown_reals=VITALS + LABS,
-        time_varying_unknown_categoricals=["SepsisClass"],
-
+        # Sepsis labels are retrospective and must not be model inputs.
+        time_varying_unknown_categoricals=[],
         target_normalizer=NaNLabelEncoder(),
     )
 
@@ -504,6 +504,126 @@ def evaluate_model(tft, train_dataset):
     print(f"AUPRC (Average Precision): {auprc:.4f}")
 
     return auroc, auprc
+
+# score the entire dataset
+def export_full_test_scores():
+    """Generate 6h risk scores for all eligible test patient-hours."""
+
+    # Load the best checkpoint, not the final epoch.
+    checkpoint_path = (
+        RUNS_DIR
+        / "checkpoints/tft_6h/epoch00-loss0.1009.ckpt"
+    )
+
+    tft = TemporalFusionTransformer.load_from_checkpoint(
+        checkpoint_path
+    )
+
+    # Load the entire test set, without sampling patients.
+    test_data = pd.read_csv(
+        PROJECT_ROOT / "data/processed/test.csv"
+    )
+
+    patient_cols = ["site", "patient_id"]
+    row_cols = patient_cols + ["ICULOS"]
+
+    # Each patient should have at most one row per ICU hour.
+    assert not test_data.duplicated(row_cols).any()
+
+    total_patients = test_data.groupby(patient_cols).ngroups
+    total_hours = len(test_data)
+
+    test_data["SepsisClass"] = (
+        test_data["SepsisLabel"].astype(int).astype(str)
+    )
+
+    test_data = test_data.sort_values(
+        row_cols
+    ).reset_index(drop=True)
+
+    # Reuse the training model's encoders and scalers.
+    test_dataset = TimeSeriesDataSet.from_parameters(
+        tft.dataset_parameters,
+        test_data,
+        predict=False,
+        stop_randomization=True,
+    )
+
+    test_loader = test_dataset.to_dataloader(
+        train=False,
+        batch_size=64,
+        num_workers=0,
+    )
+
+    # Predict every eligible sliding window.
+    predictions = tft.predict(
+        test_loader,
+        mode=("raw", "prediction"),
+        return_index=True,
+        return_y=True,
+        trainer_kwargs={
+            "accelerator": "mps",
+            "devices": 1,
+            "logger": False,
+        },
+    )
+
+    # Convert the model's outputs into sepsis probabilities.
+    positive_class = (
+        test_dataset.target_normalizer.classes_["1"]
+    )
+
+    scores = torch.softmax(
+        predictions.output, dim=-1
+    )[..., positive_class].reshape(-1).cpu().numpy()
+
+    labels = (
+        predictions.y[0]
+        .reshape(-1)
+        .cpu()
+        .numpy()
+        .astype(int)
+    )
+
+    # Associate every prediction with its patient and ICU hour.
+    results = predictions.index[row_cols].copy()
+    results["y_true"] = labels
+    results["risk_score"] = scores
+
+    # Verify scores correspond to the original test labels.
+    aligned = results.merge(
+        test_data[row_cols + ["SepsisLabel"]],
+        on=row_cols,
+        how="left",
+        validate="one_to_one",
+    )
+
+    assert aligned["SepsisLabel"].notna().all()
+    assert (
+        aligned["y_true"] == aligned["SepsisLabel"]
+    ).all()
+    assert aligned["risk_score"].between(0, 1).all()
+
+    # Export the real model-generated scores.
+    output_path = (
+        PROJECT_ROOT / "data/processed/tft_scores_6h.csv"
+    )
+
+    results.to_csv(output_path, index=False)
+
+    scored_patients = results.groupby(patient_cols).ngroups
+
+    print("\nFull test-set scoring complete!")
+    print("Total test patients:", total_patients)
+    print("Patients scored:", scored_patients)
+    print("Patients not scored:", total_patients - scored_patients)
+    print("Total test hours:", total_hours)
+    print("Hours scored:", len(results))
+    print("Hours not scored:", total_hours - len(results))
+    print("Positive hours scored:", int(labels.sum()))
+    print("Saved to:", output_path)
+
+    return results
 
 # What runs when script is ran in order to check everything is correct
 if __name__ == "__main__":
