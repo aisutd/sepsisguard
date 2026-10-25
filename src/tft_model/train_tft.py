@@ -38,6 +38,7 @@ DEMOGRAPHICS = [
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 TRAIN_PATH = PROJECT_ROOT / "data/processed/train.csv"
+SPLIT_PATH = Path.home() / "sepsisguard_runs/week4/patient_split.csv"
 
 
 # Get cleaned data from paitents with 24+ hours of it, then select 1000 paitents at random
@@ -133,6 +134,44 @@ def split_train_validation(data):
 
     return train_data, val_data
 
+
+# Reuse the same patients for the 6-hour and 12-hour models.
+def load_fixed_split(data):
+
+    # Load the patient assignments saved earlier.
+    patient_splits = pd.read_csv(SPLIT_PATH)
+
+    # Make sure each patient has only one assignment.
+    if patient_splits.duplicated(["site", "patient_id"]).any():
+        raise ValueError("Duplicate patient IDs in saved split.")
+
+    # Attach each patient's assigned group to their hourly records.
+    data = data.merge(
+        patient_splits,
+        on=["site", "patient_id"],
+        how="left",
+        validate="many_to_one",
+    )
+
+    # Stop if any patient is missing from the saved split.
+    if data["split"].isna().any():
+        raise ValueError("Some patients are missing from the saved split.")
+
+    if not data["split"].isin(["train", "validation"]).all():
+        raise ValueError("Invalid split assignment.")
+
+    # Separate training and validation patient records.
+    train_data = data[data["split"] == "train"].drop(
+        columns=["split"]
+    ).copy()
+
+    val_data = data[data["split"] == "validation"].drop(
+        columns=["split"]
+    ).copy()
+
+    return train_data, val_data
+
+
 #Same function as seen in prepare_data.py but now using binary classification
 def create_dataloaders(train_data, val_data, batch_size=32):
 
@@ -218,11 +257,11 @@ def train_model(train_dataset, train_loader, val_loader):
 
     # Configure a small training run
     trainer = Trainer(
-        max_epochs=3,
-        accelerator="cpu",
+        max_epochs=1,
+        accelerator="mps",
         devices=1,
-        limit_train_batches=100,
-        limit_val_batches=130,
+        limit_train_batches=1.0,
+        limit_val_batches=1.0,
         gradient_clip_val=0.1,
         num_sanity_val_steps=0,
         logger=False,
@@ -298,7 +337,7 @@ def generate_predictions(tft, train_dataset):
         test_dataset,
         mode=("raw", "prediction"),
         return_index=True,
-        trainer_kwargs={"accelerator": "cpu", "devices": 1}
+        trainer_kwargs={"accelerator": "mps", "devices": 1}
     )
 
     # Convert class logits into probabilities
@@ -429,9 +468,9 @@ def evaluate_model(tft, train_dataset):
 # What runs when script is ran in order to check everything is correct
 if __name__ == "__main__":
 
-    data = load_training_sample()
+    data = load_training_sample(n_paitents=23823)
 
-    train_data, val_data = split_train_validation(data)
+    train_data, val_data = load_fixed_split(data)
 
     print("Total patients:", data.groupby(
         ["site", "patient_id"]
