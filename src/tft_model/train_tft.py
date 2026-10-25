@@ -82,6 +82,55 @@ def load_training_sample(n_patients=1000):
 
     return data
 
+
+# Load the same patient data but change the prediction target.
+def load_training_horizon(horizon="6h", n_patients=50000):
+
+    # Load the original data using the same patient selection.
+    data = load_training_sample(n_patients=n_patients)
+
+    # The original SepsisLabel is already the 6h target.
+    if horizon == "6h":
+        return data
+
+    if horizon != "12h":
+        raise ValueError("Horizon must be '6h' or '12h'.")
+
+    # Load only Maritza's labels, not her additional trend features.
+    keys = ["site", "patient_id", "ICULOS"]
+
+    labels = pd.read_csv(
+        PROJECT_ROOT / "data/processed/train_features.csv",
+        usecols=keys + ["label_6h", "label_12h"],
+    )
+
+    # Check that each patient-hour occurs only once.
+    if labels.duplicated(keys).any():
+        raise ValueError("Duplicate patient-hours in label file.")
+
+    # Match each new label to the correct patient and hour.
+    data = data.merge(
+        labels,
+        on=keys,
+        how="left",
+        validate="one_to_one",
+    )
+
+    if data[["label_6h", "label_12h"]].isna().any().any():
+        raise ValueError("Some patient-hours are missing labels.")
+
+    # Confirm the original 6h labels still match.
+    if not (data["SepsisLabel"] == data["label_6h"]).all():
+        raise ValueError("6h labels do not match.")
+
+    if not data["label_12h"].isin([0, 1]).all():
+        raise ValueError("12h target must contain only 0 and 1.")
+
+    # Replace only the target. Keep all the original features.
+    data["SepsisLabel"] = data["label_12h"].astype(int)
+
+    return data.drop(columns=["label_6h", "label_12h"])
+
 # Split paitents into 80% for training and 20% for validation
 # However, blindly splitting might cause a set to have no positive sepsis paitents
 # Use of a stratified split identifies positive paitents and distributes them evenly across both sets
@@ -506,20 +555,37 @@ def evaluate_model(tft, train_dataset):
     return auroc, auprc
 
 # score the entire dataset
-def export_full_test_scores():
-    """Generate 6h risk scores for all eligible test patient-hours."""
 
-    # Load the best checkpoint, not the final epoch.
+def export_full_test_scores(horizon="6h"):
+
+    """Generate risk scores for every eligible test patient-hour."""
+
+    # Only allow the two required prediction horizons.
+    if horizon not in ["6h", "12h"]:
+        raise ValueError("Horizon must be '6h' or '12h'.")
+
+    # Select the best checkpoint for the requested horizon.
+    checkpoint_names = {
+        "6h": "epoch00-loss0.1009.ckpt",
+        "12h": "epoch00-loss0.1443.ckpt",
+    }
+
     checkpoint_path = (
         RUNS_DIR
-        / "checkpoints/tft_6h/epoch00-loss0.1009.ckpt"
+        / "checkpoints"
+        / f"tft_{horizon}"
+        / checkpoint_names[horizon]
     )
 
+    if not checkpoint_path.exists():
+        raise FileNotFoundError(checkpoint_path)
+
+    # Load the trained TFT without retraining.
     tft = TemporalFusionTransformer.load_from_checkpoint(
         checkpoint_path
     )
 
-    # Load the entire test set, without sampling patients.
+    # Load the original test data and keep the same input features.
     test_data = pd.read_csv(
         PROJECT_ROOT / "data/processed/test.csv"
     )
@@ -527,12 +593,55 @@ def export_full_test_scores():
     patient_cols = ["site", "patient_id"]
     row_cols = patient_cols + ["ICULOS"]
 
-    # Each patient should have at most one row per ICU hour.
-    assert not test_data.duplicated(row_cols).any()
+    # Each patient should have one record per ICU hour.
+    if test_data.duplicated(row_cols).any():
+        raise ValueError("Duplicate patient-hours in test.csv.")
 
     total_patients = test_data.groupby(patient_cols).ngroups
     total_hours = len(test_data)
 
+    # For 12h, load Maritza's labels and change only the target.
+    if horizon == "12h":
+        labels = pd.read_csv(
+            PROJECT_ROOT / "data/processed/test_features.csv",
+            usecols=row_cols + ["label_6h", "label_12h"],
+        )
+
+        if labels.duplicated(row_cols).any():
+            raise ValueError("Duplicate patient-hours in label file.")
+
+        # Attach labels to the correct patient and hour.
+        test_data = test_data.merge(
+            labels,
+            on=row_cols,
+            how="left",
+            validate="one_to_one",
+        )
+
+        # Make sure all required labels are present.
+        if test_data[["label_6h", "label_12h"]].isna().any().any():
+            raise ValueError("Missing 12h labels.")
+
+        # Verify that the original 6h labels haven't changed.
+        if not (
+            test_data["SepsisLabel"] == test_data["label_6h"]
+        ).all():
+            raise ValueError("Original 6h labels do not match.")
+
+        if not test_data["label_12h"].isin([0, 1]).all():
+            raise ValueError("Invalid 12h labels.")
+
+        # Replace the target with the 12h warning label.
+        test_data["SepsisLabel"] = (
+            test_data["label_12h"].astype(int)
+        )
+
+        # Don't include the horizon labels as model features.
+        test_data = test_data.drop(
+            columns=["label_6h", "label_12h"]
+        )
+
+    # Convert the selected target to a classification label.
     test_data["SepsisClass"] = (
         test_data["SepsisLabel"].astype(int).astype(str)
     )
@@ -541,7 +650,7 @@ def export_full_test_scores():
         row_cols
     ).reset_index(drop=True)
 
-    # Reuse the training model's encoders and scalers.
+    # Reuse the training dataset's encoders and scalers.
     test_dataset = TimeSeriesDataSet.from_parameters(
         tft.dataset_parameters,
         test_data,
@@ -549,13 +658,14 @@ def export_full_test_scores():
         stop_randomization=True,
     )
 
+    # Create batches for full test-set prediction.
     test_loader = test_dataset.to_dataloader(
         train=False,
         batch_size=64,
         num_workers=0,
     )
 
-    # Predict every eligible sliding window.
+    # Predict every eligible patient-hour on the M5 GPU.
     predictions = tft.predict(
         test_loader,
         mode=("raw", "prediction"),
@@ -568,16 +678,19 @@ def export_full_test_scores():
         },
     )
 
-    # Convert the model's outputs into sepsis probabilities.
+    # Identify the positive sepsis class.
     positive_class = (
         test_dataset.target_normalizer.classes_["1"]
     )
 
+    # Convert the model's logits into predicted probabilities.
     scores = torch.softmax(
-        predictions.output, dim=-1
+        predictions.output,
+        dim=-1,
     )[..., positive_class].reshape(-1).cpu().numpy()
 
-    labels = (
+    # Retrieve the actual target for each prediction.
+    true_labels = (
         predictions.y[0]
         .reshape(-1)
         .cpu()
@@ -585,12 +698,12 @@ def export_full_test_scores():
         .astype(int)
     )
 
-    # Associate every prediction with its patient and ICU hour.
+    # Match risk scores to patient IDs and prediction hours.
     results = predictions.index[row_cols].copy()
-    results["y_true"] = labels
+    results["y_true"] = true_labels
     results["risk_score"] = scores
 
-    # Verify scores correspond to the original test labels.
+    # Verify that every score matches the correct patient-hour.
     aligned = results.merge(
         test_data[row_cols + ["SepsisLabel"]],
         on=row_cols,
@@ -598,29 +711,37 @@ def export_full_test_scores():
         validate="one_to_one",
     )
 
-    assert aligned["SepsisLabel"].notna().all()
-    assert (
-        aligned["y_true"] == aligned["SepsisLabel"]
-    ).all()
-    assert aligned["risk_score"].between(0, 1).all()
+    if aligned["SepsisLabel"].isna().any():
+        raise ValueError("Some predictions have no matching labels.")
 
-    # Export the real model-generated scores.
+    if not (
+        aligned["y_true"] == aligned["SepsisLabel"]
+    ).all():
+        raise ValueError("Predictions and labels are misaligned.")
+
+    if not results["risk_score"].between(0, 1).all():
+        raise ValueError("Invalid probability scores.")
+
+    # Save the scores to a horizon-specific CSV.
     output_path = (
-        PROJECT_ROOT / "data/processed/tft_scores_6h.csv"
+        PROJECT_ROOT
+        / "data/processed"
+        / f"tft_scores_{horizon}.csv"
     )
 
     results.to_csv(output_path, index=False)
 
+    # Report which patient-hours the TFT could not score.
     scored_patients = results.groupby(patient_cols).ngroups
 
-    print("\nFull test-set scoring complete!")
+    print(f"\nFull {horizon} test-set scoring complete!")
     print("Total test patients:", total_patients)
     print("Patients scored:", scored_patients)
     print("Patients not scored:", total_patients - scored_patients)
     print("Total test hours:", total_hours)
     print("Hours scored:", len(results))
     print("Hours not scored:", total_hours - len(results))
-    print("Positive hours scored:", int(labels.sum()))
+    print("Positive hours scored:", int(true_labels.sum()))
     print("Saved to:", output_path)
 
     return results
