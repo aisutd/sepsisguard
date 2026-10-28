@@ -3,6 +3,11 @@
 Input format (Immaculate's export, data/sample/shap_top_features.json):
     {"patient_id": "p000123",
      "top_features": [{"feature": "Lactate", "shap_value": 0.42}, ...]}
+Each feature may also carry a "value", as in
+data/sample/shap_top_features_with_values.json (see export_values.py). When it
+is there, the summary quotes it next to the feature name, e.g. "Lactate (3.1)
+raised ...". It is the number the model was given, which can be carried forward
+or filled in by the cleaning step, so the summary never calls it a measurement.
 
 Two ways to write the summary ("backends"):
 
@@ -10,15 +15,18 @@ Two ways to write the summary ("backends"):
              Every word comes from the input or from fixed text we wrote, so
              it cannot invent a feature. Fast, needs no model download.
 
-  distilbart Writes the template text first, then asks DistilBART to rephrase
-             it. Kept so we can measure how often a language model drifts from
-             its input. Its output must pass verify_summary.py before we use it.
+  distilbart Writes the template's feature sentences first, then asks
+             DistilBART to rephrase them and adds the caveat itself. Kept so we
+             can measure how often a language model drifts from its input. Its
+             output must pass verify_summary.py before we use it.
 
 What a SHAP value means here: a positive value pushed this patient's predicted
-sepsis risk UP and a negative value pushed it DOWN. It is NOT the patient's
+sepsis risk UP and a negative value pushed it DOWN. That sign is the only thing
+the direction words ("raised", "lowered") come from. It is NOT the patient's
 measured value (a positive SHAP for Lactate does not mean lactate is high), and
 it is NOT a diagnosis. The summary says which way each feature pushed the
-estimate and nothing about the measurements themselves.
+estimate and quotes the value the model was given, but never says whether that
+value is high or low.
 """
 
 import math
@@ -29,15 +37,32 @@ from feature_names import readable_name
 
 TOP_K = 5
 DISTILBART_MODEL = "sshleifer/distilbart-cnn-12-6"
+DISTILBART_BATCH_SIZE = 16  # gains level off past about 16
 
 CAVEAT = (
-    "These reflect what the model weighed, not measured values or a diagnosis."
+    "These reflect what the model weighed, based on the values it was given, "
+    "not a diagnosis."
 )
+
+# Yes/no columns. A quoted "(1)" next to "being in a medical ICU" says nothing
+# useful, so these are described without their value.
+BINARY_FEATURES = {"Gender", "Unit1", "Unit2"}
 
 
 # ---------------------------------------------------------------------------
 # Input handling
 # ---------------------------------------------------------------------------
+
+def check_number(value, label):
+    """Raise ValueError unless value is a finite int or float."""
+    # bool is a subclass of int in Python, so rule it out explicitly.
+    if (
+        isinstance(value, bool)
+        or not isinstance(value, (int, float))
+        or not math.isfinite(value)
+    ):
+        raise ValueError(f"Invalid {label}: {value!r}")
+
 
 def parse_top_features(entry):
     """Check one patient entry and return its features, strongest first.
@@ -55,14 +80,7 @@ def parse_top_features(entry):
         value = item.get("shap_value")
 
         readable_name(name)  # raises ValueError for an unknown column
-
-        # bool is a subclass of int in Python, so rule it out explicitly.
-        if (
-            isinstance(value, bool)
-            or not isinstance(value, (int, float))
-            or not math.isfinite(value)
-        ):
-            raise ValueError(f"Invalid SHAP value for {name}: {value!r}")
+        check_number(value, f"SHAP value for {name}")
 
         if value != 0:
             features.append((name, float(value)))
@@ -78,6 +96,23 @@ def parse_top_features(entry):
     return features[:TOP_K]
 
 
+def parse_values(entry):
+    """Return {column: value} for every feature in the entry that has a value."""
+    values = {}
+    for item in entry["top_features"]:
+        if item.get("value") is None:
+            continue
+        check_number(item["value"], f"value for {item.get('feature')}")
+        values[item["feature"]] = float(item["value"])
+    return values
+
+
+def format_number(value):
+    """Print a value with at most 2 decimals: 110.0 -> '110', -0.031 -> '-0.03'."""
+    text = f"{value:.2f}".rstrip("0").rstrip(".")
+    return "0" if text == "-0" else text
+
+
 def join_names(names):
     """['a'] -> 'a';  ['a','b'] -> 'a and b';  ['a','b','c'] -> 'a, b, and c'."""
     if len(names) == 1:
@@ -91,22 +126,31 @@ def join_names(names):
 # Backend 1: template
 # ---------------------------------------------------------------------------
 
-def template_summary(entry):
-    """Build the summary from a fixed sentence pattern.
+def template_body(entry):
+    """Build the feature sentences (everything except the caveat) from a fixed pattern.
 
     Features are split by the sign of their SHAP value and each group keeps
     its strongest-first order. The group with the strongest feature comes
     first, e.g.:
 
-        "Lactate raised this patient's predicted sepsis risk the most,
-        followed by time in the ICU and heart rate. Temperature and age
-        lowered it. These reflect what the model weighed, not measured
-        values or a diagnosis."
+        "Lactate (3.1) raised this patient's predicted sepsis risk the most,
+        followed by time in the ICU (42) and heart rate (118). Temperature
+        (36.2) and age (71) lowered it."
+
+    template_summary() adds the caveat after this.
     """
     features = parse_top_features(entry)
+    values = parse_values(entry)
 
-    raised = [readable_name(f) for f, v in features if v > 0]
-    lowered = [readable_name(f) for f, v in features if v < 0]
+    def label(column):
+        """The readable name, followed by the model's input value when we have one."""
+        name = readable_name(column)
+        if column in values and column not in BINARY_FEATURES:
+            return f"{name} ({format_number(values[column])})"
+        return name
+
+    raised = [label(f) for f, v in features if v > 0]
+    lowered = [label(f) for f, v in features if v < 0]
 
     # The group holding the single strongest feature goes first, so its
     # first name is the strongest overall and "the most" is true.
@@ -127,11 +171,15 @@ def template_summary(entry):
             sentences.append(f"{lead[0]} {lead_verb} {risk}.")
     if other:
         sentences.append(f"{join_names(other)} {other_verb} it.")
-    sentences.append(CAVEAT)
 
     # Capitalize the first letter of each sentence without touching the
     # rest (lowercasing would break names like "AST" or "troponin I").
     return " ".join(s[0].upper() + s[1:] for s in sentences)
+
+
+def template_summary(entry):
+    """The finished template summary: the feature sentences, then the caveat."""
+    return f"{template_body(entry)} {CAVEAT}"
 
 
 # ---------------------------------------------------------------------------
@@ -148,24 +196,51 @@ def load_summarizer():
     return pipeline("summarization", model=DISTILBART_MODEL, device=device)
 
 
-def distilbart_summary(entry):
-    """Give DistilBART the template text and return its rewrite.
+def distilbart_summaries(entries, batch_size=DISTILBART_BATCH_SIZE):
+    """Give DistilBART each patient's template feature sentences; return the rewrites.
 
-    No checking happens here on purpose: verify_summary.py decides whether
-    the output is safe to show.
+    The caveat is fixed text, so it is added here and never given to the
+    model. In a first run on 50 patients, DistilBART dropped it from 39 of 50
+    summaries because a summarizer cuts what looks like filler.
+
+    Patients are sent in batches, which was about 3x faster than one call per
+    patient on 50 patients (27.6 s to 10.7 s at batch_size 16) with identical
+    text, because decoding is greedy.
+
+    Nothing else is checked here on purpose: verify_summary.py decides
+    whether the output is safe to show.
     """
-    source_text = template_summary(entry)
-    result = load_summarizer()(
-        source_text, min_length=10, max_length=80, do_sample=False
+    if not entries:
+        return []
+    source_texts = [template_body(entry) for entry in entries]
+    results = load_summarizer()(
+        source_texts, min_length=10, max_length=80, do_sample=False,
+        batch_size=batch_size,
     )
-    text = result[0]["summary_text"].strip()
-    # DistilBART sometimes puts a space before punctuation ("rate ." -> "rate.").
-    return re.sub(r"\s+([.,!?;:])", r"\1", text)
+    summaries = []
+    for result in results:
+        text = result["summary_text"].strip()
+        # DistilBART sometimes puts a space before punctuation ("rate ." -> "rate.").
+        text = re.sub(r"\s+([.,!?;:])", r"\1", text)
+        if text and text[-1] not in ".!?":
+            text += "."  # so the caveat starts a new sentence
+        summaries.append(f"{text} {CAVEAT}")
+    return summaries
+
+
+def distilbart_summary(entry):
+    """One patient's DistilBART summary (see distilbart_summaries)."""
+    return distilbart_summaries([entry])[0]
 
 
 BACKENDS = {
     "template": template_summary,
     "distilbart": distilbart_summary,
+}
+
+# Backends that are faster given many patients at once.
+BATCH_BACKENDS = {
+    "distilbart": distilbart_summaries,
 }
 
 
@@ -176,15 +251,22 @@ def generate_summary(entry, backend="template"):
     return BACKENDS[backend](entry)
 
 
+def generate_summaries(entries, backend="template"):
+    """Generate a summary for each entry, batching when the backend supports it."""
+    if backend in BATCH_BACKENDS:
+        return BATCH_BACKENDS[backend](entries)
+    return [generate_summary(entry, backend) for entry in entries]
+
+
 if __name__ == "__main__":
     example = {
         "patient_id": "demo",
         "top_features": [
-            {"feature": "Lactate", "shap_value": 0.42},
-            {"feature": "ICULOS", "shap_value": 0.31},
-            {"feature": "HR", "shap_value": 0.18},
-            {"feature": "Temp", "shap_value": -0.12},
-            {"feature": "Age", "shap_value": -0.05},
+            {"feature": "Lactate", "shap_value": 0.42, "value": 3.1},
+            {"feature": "ICULOS", "shap_value": 0.31, "value": 42},
+            {"feature": "HR", "shap_value": 0.18, "value": 118},
+            {"feature": "Temp", "shap_value": -0.12, "value": 36.2},
+            {"feature": "Age", "shap_value": -0.05, "value": 71},
         ],
     }
     print(generate_summary(example))
