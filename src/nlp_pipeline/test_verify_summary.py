@@ -282,9 +282,25 @@ class DistilbartBackend(unittest.TestCase):
                 summary = generator.distilbart_summary(PATIENT)
             self.assertEqual(summary, "Lactate (3.1) raised the risk. " + CAVEAT)
         # The model is given the feature sentences only, not the caveat.
-        given = fake.call_args.args[0]
+        given = fake.call_args.args[0][0]
         self.assertNotIn("model weighed", given)
         self.assertTrue(given.startswith("Lactate (3.1) raised this patient's"))
+
+
+    def test_batch_returns_one_summary_per_patient_in_order(self):
+        other = {"patient_id": "p2", "top_features": [
+            {"feature": "Age", "shap_value": -0.2, "value": 71}]}
+        fake = mock.Mock(return_value=[{"summary_text": "Lactate raised it."},
+                                       {"summary_text": "Age lowered it ."}])
+        with mock.patch.object(generator, "load_summarizer", return_value=fake):
+            summaries = generator.distilbart_summaries([PATIENT, other])
+            self.assertEqual(generator.generate_summaries([PATIENT, other], "distilbart"), summaries)
+        self.assertEqual(summaries, ["Lactate raised it. " + CAVEAT, "Age lowered it. " + CAVEAT])
+        self.assertEqual(len(fake.call_args.args[0]), 2)
+        self.assertEqual(generator.distilbart_summaries([]), [])
+
+    def test_template_backend_still_works_one_at_a_time(self):
+        self.assertEqual(generator.generate_summaries([PATIENT], "template"), [generate_summary(PATIENT)])
 
 
 class FailureTypes(unittest.TestCase):

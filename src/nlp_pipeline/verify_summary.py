@@ -40,6 +40,7 @@ from feature_names import FEATURES, GROUP_TERMS
 from generate_summary import (
     CAVEAT,
     format_number,
+    generate_summaries,
     generate_summary,
     parse_top_features,
     parse_values,
@@ -154,14 +155,13 @@ def number_matches(written, expected):
     return abs(float(written) - expected) <= 0.5 * 10 ** -decimals + 1e-9
 
 
-def check_numbers(sentence, top, values):
+def check_numbers(sentence, spans, top, values):
     """Return a problem for each number in one sentence that the input does not back.
 
-    A number belongs to the feature mentioned most recently before it, which
-    is how the template writes it: "heart rate (118)".
+    `spans` is find_mention_spans(sentence). A number belongs to the feature
+    mentioned most recently before it, which is how the template writes it:
+    "heart rate (118)".
     """
-    spans = find_mention_spans(sentence)
-
     # Blank the feature names so digits inside them ("O2 sat", "HCO3") are
     # not read as numbers.
     blanked = sentence
@@ -230,10 +230,11 @@ def verify_summary(summary, entry):
     for sentence in re.split(r"(?<=[.!?])\s+", body):
         # Numbers are checked in every sentence, so a bare number cannot hide
         # in one that names no feature.
-        for message in check_numbers(sentence, top, values):
+        spans = find_mention_spans(sentence)
+        for message in check_numbers(sentence, spans, top, values):
             fail("wrong_number", message)
 
-        named = [(p, c & top.keys()) for p, c in find_mentions(sentence)]
+        named = [(phrase, columns & top.keys()) for phrase, columns, _, _ in spans]
         named = [(p, c) for p, c in named if c]
         if not named:
             continue
@@ -278,15 +279,18 @@ def verify_summary(summary, entry):
 # Step 3: run over a file of patients
 # ---------------------------------------------------------------------------
 
-def summarize_and_verify(entry, backend):
-    """Generate a summary with the chosen backend and check it.
+def summarize_and_verify(entry, backend, summary=None):
+    """Check a summary from the chosen backend, generating it if not given.
+
+    Pass `summary` when it was already written, e.g. by generate_summaries.
 
     The record's "summary" is exactly what the backend wrote and "verified"
     says whether it passed, so a failure stays visible in the saved file with
     its "failure_reason". A failed summary also gets a "fallback_summary":
     the template text, which is safe to show in its place.
     """
-    summary = generate_summary(entry, backend)
+    if summary is None:
+        summary = generate_summary(entry, backend)
     check = verify_summary(summary, entry)
     record = {
         "patient_id": entry["patient_id"],
@@ -320,7 +324,8 @@ def main():
     args = parser.parse_args()
 
     entries = json.loads(args.input.read_text())
-    records = [summarize_and_verify(e, args.backend) for e in entries]
+    summaries = generate_summaries(entries, args.backend)
+    records = [summarize_and_verify(e, args.backend, s) for e, s in zip(entries, summaries)]
 
     passed = sum(r["verified"] for r in records)
     patients = len({r["patient_id"] for r in records})
