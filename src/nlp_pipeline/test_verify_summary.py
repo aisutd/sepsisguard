@@ -4,26 +4,42 @@ Run from the repo root (standard library only, no extra packages):
     python -m unittest discover -s src/nlp_pipeline -v
 
 The "bad summary" cases imitate the mistakes a language model makes when
-rewriting the input: adding a feature, swapping a direction, using a synonym
-for a feature that isn't there, or turning a risk estimate into a diagnosis.
+rewriting the input: adding a feature, swapping a direction, quoting the wrong
+number, using a synonym for a feature that isn't there, or turning a risk
+estimate into a diagnosis.
 """
 
 import json
 import unittest
 from pathlib import Path
+from unittest import mock
 
-from generate_summary import CAVEAT, generate_summary, parse_top_features
-from verify_summary import MOCK_INPUT, find_mentions, verify_summary
+import generate_summary as generator
+from generate_summary import (
+    CAVEAT,
+    format_number,
+    generate_summary,
+    parse_top_features,
+    parse_values,
+)
+from verify_summary import (
+    MOCK_INPUT,
+    VALUES_INPUT,
+    find_mentions,
+    summarize_and_verify,
+    verify_summary,
+)
 
-# Lactate, ICULOS and HR push risk up; Temp and Age push it down.
+# Lactate, ICULOS and HR push risk up; Temp and Age push it down. The value
+# is the number the model was given for that feature.
 PATIENT = {
     "patient_id": "test",
     "top_features": [
-        {"feature": "Lactate", "shap_value": 0.42},
-        {"feature": "ICULOS", "shap_value": 0.31},
-        {"feature": "HR", "shap_value": 0.18},
-        {"feature": "Temp", "shap_value": -0.12},
-        {"feature": "Age", "shap_value": -0.05},
+        {"feature": "Lactate", "shap_value": 0.42, "value": 3.1},
+        {"feature": "ICULOS", "shap_value": 0.31, "value": 42},
+        {"feature": "HR", "shap_value": 0.18, "value": 118},
+        {"feature": "Temp", "shap_value": -0.12, "value": 36.2},
+        {"feature": "Age", "shap_value": -0.05, "value": 71},
     ],
 }
 
@@ -40,11 +56,38 @@ class TemplateTests(unittest.TestCase):
     def test_groups_by_direction_strongest_first(self):
         self.assertEqual(
             generate_summary(PATIENT),
-            "Lactate raised this patient's predicted sepsis risk the most, "
-            "followed by time in the ICU and heart rate. Temperature and age "
-            "lowered it. These reflect what the model weighed, not measured "
-            "values or a diagnosis.",
+            "Lactate (3.1) raised this patient's predicted sepsis risk the most, "
+            "followed by time in the ICU (42) and heart rate (118). Temperature "
+            "(36.2) and age (71) lowered it. " + CAVEAT,
         )
+
+    def test_every_real_patient_passes(self):
+        """All 50 real patients (SHAP computed on real values) pass, with values quoted."""
+        entries = json.loads(Path(VALUES_INPUT).read_text())
+        self.assertGreaterEqual(len(entries), 20)
+        for entry in entries:
+            result = verify_summary(generate_summary(entry), entry)
+            self.assertTrue(result["verified"], (entry["patient_id"], result["problems"]))
+
+    def test_values_are_quoted_but_not_for_yes_no_features(self):
+        entry = {"patient_id": "x", "top_features": [
+            {"feature": "Lactate", "shap_value": 0.4, "value": 3.14159},
+            {"feature": "Unit1", "shap_value": -0.2, "value": 1.0}]}
+        self.assertTrue(generate_summary(entry).startswith(
+            "Lactate (3.14) raised this patient's predicted sepsis risk. "
+            "Being in a medical ICU lowered it. "))
+
+    def test_missing_value_is_left_out(self):
+        entry = {"patient_id": "x", "top_features": [
+            {"feature": "HR", "shap_value": 0.4, "value": 118},
+            {"feature": "Age", "shap_value": 0.2}]}
+        self.assertIn("Heart rate (118) raised this patient's predicted sepsis risk "
+                      "the most, followed by age.", generate_summary(entry))
+
+    def test_number_formatting(self):
+        self.assertEqual(
+            [format_number(v) for v in [110.0, 3.1, -0.031, -0.001, 0.0, 52.014, 100]],
+            ["110", "3.1", "-0.03", "0", "0", "52.01", "100"])
 
     def test_strongest_negative_feature_leads(self):
         entry = {"patient_id": "x", "top_features": [
@@ -82,10 +125,18 @@ class TemplateTests(unittest.TestCase):
             {"patient_id": "x", "top_features": [{"feature": "HR", "shap_value": True}]},
             {"patient_id": "x", "top_features": [{"feature": "HR", "shap_value": float("nan")}]},
             {"patient_id": "x", "top_features": [{"feature": "HR", "shap_value": 0}]},
+            {"patient_id": "x", "top_features": [{"feature": "HR", "shap_value": 0.1, "value": "98"}]},
+            {"patient_id": "x", "top_features": [{"feature": "HR", "shap_value": 0.1, "value": float("inf")}]},
             {"patient_id": "x"},
         ]:
             with self.assertRaises(ValueError, msg=bad):
                 generate_summary(bad)
+
+    def test_parse_values_skips_features_without_one(self):
+        entry = {"patient_id": "x", "top_features": [
+            {"feature": "HR", "shap_value": 0.4, "value": 118},
+            {"feature": "Age", "shap_value": 0.2}]}
+        self.assertEqual(parse_values(entry), {"HR": 118.0})
 
 
 class VerifierCatchesBadSummaries(unittest.TestCase):
@@ -143,8 +194,35 @@ class VerifierCatchesBadSummaries(unittest.TestCase):
         # SHAP says nothing about whether the measured value was high.
         self.assertFails("Lactate was high and raised the risk.", "high")
 
-    def test_numbers_are_not_accepted_yet(self):
-        self.assertFails("Lactate 5.2 raised the risk.", "contains a number")
+    def test_wrong_number(self):
+        self.assertFails("Lactate (5.2) raised the risk.", "says 'Lactate' is 5.2, but the input value is 3.1")
+
+    def test_right_number_on_the_wrong_feature(self):
+        # 118 is the heart rate; attaching it to lactate is still wrong.
+        self.assertFails("Lactate (118) and heart rate (3.1) raised the risk.",
+                         "says 'Lactate' is 118")
+        self.assertFails("Lactate (118) and heart rate (3.1) raised the risk.",
+                         "says 'heart rate' is 3.1")
+
+    def test_number_for_a_feature_with_no_input_value(self):
+        entry = {"patient_id": "x", "top_features": [{"feature": "HR", "shap_value": 0.4}]}
+        result = verify_summary("Heart rate (118) raised the risk. " + CAVEAT, entry)
+        self.assertEqual(result["failure_types"], ["wrong_number"])
+        self.assertIn("the input has no value for it", result["problems"][0])
+
+    def test_number_with_no_feature_before_it(self):
+        self.assertFails("About 118 raised the risk, and lactate did too.", "without a feature name before it")
+
+    def test_number_in_a_sentence_with_no_feature_fails(self):
+        # A bare number has no words for the wording check to object to.
+        self.assertFails("Lactate (3.1) raised the risk. 42.", "without a feature name before it")
+
+    def test_quoting_the_shap_value_instead_of_the_value_fails(self):
+        self.assertFails("Lactate (0.42) raised the risk.", "says 'Lactate' is 0.42")
+
+    def test_unit_or_judgement_next_to_a_number_fails(self):
+        self.assertFails("Lactate (3.1 mmol) raised the risk.", "mmol")
+        self.assertFails("Heart rate (118, high) raised the risk.", "high")
 
     def test_no_features(self):
         self.assertFails("The model made a prediction.", "names no features")
@@ -174,10 +252,99 @@ class VerifierAcceptsGoodSummaries(unittest.TestCase):
             PATIENT)
         self.assertTrue(result["verified"], result)
 
+    def test_numbers_match_to_the_decimals_written(self):
+        # 3.1 and 36.2 as given; "118" and "36" are roundings of 118 and 36.2.
+        for text in ["Lactate (3.1) raised the risk.", "Lactate (3.10) raised the risk.",
+                     "Heart rate (118) raised the risk.", "Temperature (36) lowered the risk."]:
+            result = verify_summary(text + " " + CAVEAT, PATIENT)
+            self.assertTrue(result["verified"], (text, result["problems"]))
+
+    def test_digits_inside_a_feature_name_are_not_numbers(self):
+        entry = {"patient_id": "x", "top_features": [{"feature": "O2Sat", "shap_value": 0.4, "value": 96}]}
+        result = verify_summary("Oxygen saturation (96) raised the risk. " + CAVEAT, entry)
+        self.assertTrue(result["verified"], result["problems"])
+        result = verify_summary("O2 sat (96) raised the risk. " + CAVEAT, entry)
+        self.assertTrue(result["verified"], result["problems"])
+
     def test_partial_summary_passes_with_warning(self):
         result = verify_summary("Lactate raised the predicted risk." + " " + CAVEAT, PATIENT)
         self.assertTrue(result["verified"])
         self.assertIn("leaves out: ICULOS, HR, Temp, Age", result["warnings"])
+
+
+class DistilbartBackend(unittest.TestCase):
+    def test_caveat_is_added_by_code_not_left_to_the_model(self):
+        # Whatever the model returns, the summary ends with the exact caveat,
+        # and a missing final full stop does not glue it to the last sentence.
+        for model_text in ["Lactate (3.1) raised the risk.", "Lactate (3.1) raised the risk"]:
+            fake = mock.Mock(return_value=[{"summary_text": model_text}])
+            with mock.patch.object(generator, "load_summarizer", return_value=fake):
+                summary = generator.distilbart_summary(PATIENT)
+            self.assertEqual(summary, "Lactate (3.1) raised the risk. " + CAVEAT)
+        # The model is given the feature sentences only, not the caveat.
+        given = fake.call_args.args[0][0]
+        self.assertNotIn("model weighed", given)
+        self.assertTrue(given.startswith("Lactate (3.1) raised this patient's"))
+
+
+    def test_batch_returns_one_summary_per_patient_in_order(self):
+        other = {"patient_id": "p2", "top_features": [
+            {"feature": "Age", "shap_value": -0.2, "value": 71}]}
+        fake = mock.Mock(return_value=[{"summary_text": "Lactate raised it."},
+                                       {"summary_text": "Age lowered it ."}])
+        with mock.patch.object(generator, "load_summarizer", return_value=fake):
+            summaries = generator.distilbart_summaries([PATIENT, other])
+            self.assertEqual(generator.generate_summaries([PATIENT, other], "distilbart"), summaries)
+        self.assertEqual(summaries, ["Lactate raised it. " + CAVEAT, "Age lowered it. " + CAVEAT])
+        self.assertEqual(len(fake.call_args.args[0]), 2)
+        self.assertEqual(generator.distilbart_summaries([]), [])
+
+    def test_template_backend_still_works_one_at_a_time(self):
+        self.assertEqual(generator.generate_summaries([PATIENT], "template"), [generate_summary(PATIENT)])
+
+
+class FailureTypes(unittest.TestCase):
+    def types(self, text):
+        return verify_summary(text + " " + CAVEAT, PATIENT)["failure_types"]
+
+    def test_each_failure_gets_its_type(self):
+        self.assertEqual(self.types("Lactate and WBC raised the risk."), ["wrong_feature"])
+        self.assertEqual(self.types("Lactate lowered the risk."), ["wrong_direction"])
+        self.assertEqual(self.types("Lactate (9) raised the risk."), ["wrong_number"])
+        self.assertEqual(self.types("Lactate raised the risk due to perfusion."), ["unsupported_wording"])
+        self.assertEqual(verify_summary("Lactate raised the risk.", PATIENT)["failure_types"],
+                         ["missing_caveat"])
+
+    def test_one_summary_can_fail_in_several_ways(self):
+        self.assertEqual(self.types("Lactate (9) lowered the risk and WBC raised it."),
+                         ["wrong_direction", "wrong_feature", "wrong_number"])
+
+    def test_a_good_summary_has_no_types(self):
+        self.assertEqual(self.types("Lactate (3.1) raised the risk."), [])
+
+
+class RecordsForTheSavedFile(unittest.TestCase):
+    def run_with(self, text):
+        """Run summarize_and_verify with a fake backend that writes `text`."""
+        with mock.patch.dict(generator.BACKENDS, {"fake": lambda entry: text}):
+            return summarize_and_verify(PATIENT, "fake")
+
+    def test_passing_summary_has_no_failure_fields(self):
+        record = self.run_with("Lactate (3.1) raised the risk. " + CAVEAT)
+        self.assertTrue(record["verified"])
+        self.assertNotIn("failure_reason", record)
+        self.assertNotIn("fallback_summary", record)
+
+    def test_failing_summary_keeps_its_text_and_gets_a_reason_and_fallback(self):
+        bad = "Lactate (5.2) raised the risk. " + CAVEAT
+        record = self.run_with(bad)
+        self.assertFalse(record["verified"])
+        self.assertEqual(record["summary"], bad)
+        self.assertEqual(record["failure_types"], ["wrong_number"])
+        self.assertIn("says 'Lactate' is 5.2, but the input value is 3.1", record["failure_reason"])
+        # The fallback is the template text, and it is safe to show.
+        self.assertEqual(record["fallback_summary"], generate_summary(PATIENT))
+        self.assertTrue(verify_summary(record["fallback_summary"], PATIENT)["verified"])
 
 
 class MentionMatching(unittest.TestCase):

@@ -1,62 +1,480 @@
 [
   {
-    "patient_id": "p000011",
-    "summary": "Time in the ICU lowered this patient's predicted sepsis risk the most, followed by temperature, respiratory rate, and heart rate. Lactate raised it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "patient_id": "p000006",
+    "summary": "Time in the ICU (19) lowered this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen. Heart rate (110), time between hospital and ICU admission (-0.03), and lactate (1.4) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
     "verified": true,
-    "backend": "template"
+    "backend": "distilbart"
   },
   {
-    "patient_id": "p000011",
-    "summary": "Time in the ICU lowered this patient's predicted sepsis risk the most, followed by temperature, respiratory rate, and heart rate. Lactate raised it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "patient_id": "p000007",
+    "summary": "Time in the ICU (45) lowered this patient's predicted sepsis risk. Temperature (37.67), AST (452), time between hospital and ICU admission (-0.05) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
     "verified": true,
-    "backend": "template"
-  },
-  {
-    "patient_id": "p000011",
-    "summary": "Temperature raised this patient's predicted sepsis risk the most, followed by lactate. Time in the ICU, heart rate, and respiratory rate lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
-    "verified": true,
-    "backend": "template"
+    "backend": "distilbart",
+    "warnings": [
+      "leaves out: Creatinine"
+    ]
   },
   {
     "patient_id": "p000011",
-    "summary": "Temperature raised this patient's predicted sepsis risk the most, followed by lactate. Time in the ICU, heart rate, and respiratory rate lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
-    "verified": true,
-    "backend": "template"
+    "summary": "Time in the ICU (35) lowered this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen (0.4) and temperature (37.17) Time between hospital and ICU admission (-0.02) and lactate (1) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (35) lowered this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen (0.4) and temperature (37.17) Time between hospital and ICU admission (-0.02) and lactate (1) raised it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (35) lowered this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen (0.4) and temperature (37.17). Time between hospital and ICU admission (-0.02) and lactate (1) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
   },
   {
-    "patient_id": "p000011",
-    "summary": "Temperature raised this patient's predicted sepsis risk the most, followed by lactate. Time in the ICU, heart rate, and respiratory rate lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
-    "verified": true,
-    "backend": "template"
+    "patient_id": "p000019",
+    "summary": "Time between hospital and ICU admission (-15.87) lowered this patient's predicted sepsis risk the most. Temperature (36.4) and fraction of inspired oxygen (0.4), blood pH (7.2) and creatinine (8.8) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says 'Temperature' raised the risk, but its SHAP value is negative; says 'fraction of inspired oxygen' raised the risk, but its SHAP value is negative",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time between hospital and ICU admission (-15.87) lowered this patient's predicted sepsis risk the most, followed by temperature (36.4) and fraction of inspired oxygen (0.4). Blood pH (7.2) and creatinine (8.8) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
   },
   {
-    "patient_id": "p000006",
-    "summary": "Lactate lowered this patient's predicted sepsis risk the most, followed by respiratory rate and temperature. Time in the ICU and heart rate raised it. These reflect what the model weighed, not measured values or a diagnosis.",
-    "verified": true,
-    "backend": "template"
+    "patient_id": "p000020",
+    "summary": "Time in the ICU (20) lowered this patient's predicted sepsis risk the most, followed by white blood cell count (9.3), lactate (1.59), and temperature (36.89) Time between hospital and ICU admission (-0.02) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (20) lowered this patient's predicted sepsis risk the most, followed by white blood cell count (9.3), lactate (1.59), and temperature (36.89) Time between hospital and ICU admission (-0.02) raised it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (20) lowered this patient's predicted sepsis risk the most, followed by white blood cell count (9.3), lactate (1.59), and temperature (36.89). Time between hospital and ICU admission (-0.02) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
   },
   {
-    "patient_id": "p000006",
-    "summary": "Time in the ICU raised this patient's predicted sepsis risk the most, followed by heart rate, respiratory rate, and lactate. Temperature lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "patient_id": "p000029",
+    "summary": "Time in the ICU (48) lowered this patient's predicted sepsis risk the most, followed by heart rate (90), lactate (1.59), blood urea nitrogen (9), and fraction of inspired oxygen (0.4). These reflect what the model weighed, based on the values it was given, not a diagnosis.",
     "verified": true,
-    "backend": "template"
+    "backend": "distilbart"
   },
   {
-    "patient_id": "p000006",
-    "summary": "Time in the ICU raised this patient's predicted sepsis risk the most, followed by heart rate, respiratory rate, and lactate. Temperature lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
-    "verified": true,
-    "backend": "template"
+    "patient_id": "p000046",
+    "summary": "Time in the ICU (50) raised this patient's predicted sepsis risk the most, followed by AST (61), lactate (0.9), and creatinine (2.3) Temperature (36.28) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (50) raised this patient's predicted sepsis risk the most, followed by AST (61), lactate (0.9), and creatinine (2.3) Temperature (36.28) lowered it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (50) raised this patient's predicted sepsis risk the most, followed by AST (61), lactate (0.9), and creatinine (2.3). Temperature (36.28) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
   },
   {
-    "patient_id": "p000006",
-    "summary": "Time in the ICU raised this patient's predicted sepsis risk the most, followed by respiratory rate, heart rate, and lactate. Temperature lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
-    "verified": true,
-    "backend": "template"
+    "patient_id": "p000060",
+    "summary": "Time between hospital and ICU admission (-0.02) raised this patient's predicted sepsis risk the most. Temperature (37.67), blood urea nitrogen (36), and white blood cell count (21.7) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says 'Temperature' lowered the risk, but its SHAP value is positive; says 'blood urea nitrogen' lowered the risk, but its SHAP value is positive; says 'white blood cell count' lowered the risk, but its SHAP value is positive",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time between hospital and ICU admission (-0.02) raised this patient's predicted sepsis risk the most, followed by temperature (37.67), blood urea nitrogen (36), and white blood cell count (21.7). Fraction of inspired oxygen (0.4) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "warnings": [
+      "leaves out: FiO2"
+    ]
   },
   {
-    "patient_id": "p000006",
-    "summary": "Time in the ICU raised this patient's predicted sepsis risk the most, followed by respiratory rate and systolic blood pressure. Temperature and heart rate lowered it. These reflect what the model weighed, not measured values or a diagnosis.",
+    "patient_id": "p000064",
+    "summary": "Time in the ICU (29) lowered this patient's predicted sepsis risk the most. Time between hospital and ICU admission (-0.01), lactate (0.9), and AST (42) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
     "verified": true,
-    "backend": "template"
+    "backend": "distilbart",
+    "warnings": [
+      "leaves out: FiO2"
+    ]
+  },
+  {
+    "patient_id": "p000073",
+    "summary": "Time in the ICU (23) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission. Heart rate (100) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": true,
+    "backend": "distilbart",
+    "warnings": [
+      "leaves out: FiO2, BUN"
+    ]
+  },
+  {
+    "patient_id": "p000078",
+    "summary": "Time in the ICU (104) raised this patient's predicted sepsis risk the most, followed by temperature (38), fraction of inspired oxygen (0.6), heart rate (110), and white blood cell count (23.3). These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": true,
+    "backend": "distilbart"
+  },
+  {
+    "patient_id": "p000079",
+    "summary": "Temperature (38.28) raised this patient's predicted sepsis risk the most, followed by heart rate (111) and lactate (0.8) Time in the ICU (42) and time between hospital and ICU admission lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Temperature (38.28) raised this patient's predicted sepsis risk the most, followed by heart rate (111) and lactate (0.8) Time in the ICU (42) and time between hospital and ICU admission lowered it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Temperature (38.28) raised this patient's predicted sepsis risk the most, followed by heart rate (111) and lactate (0.8). Time in the ICU (42) and time between hospital and ICU admission (-181.52) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
+  },
+  {
+    "patient_id": "p000082",
+    "summary": "Time in the ICU (44) lowered this patient's predicted sepsis risk the most, followed by white blood cell count (9.5) and fraction of inspired oxygen (0.3). These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": true,
+    "backend": "distilbart",
+    "warnings": [
+      "leaves out: AST, HospAdmTime"
+    ]
+  },
+  {
+    "patient_id": "p000083",
+    "summary": "Time in the ICU (52) raised this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen (0.5) and mean arterial pressure (61.33) Blood urea nitrogen (8) and temperature (36.56) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (52) raised this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen (0.5) and mean arterial pressure (61.33) Blood urea nitrogen (8) and temperature (36.56) lowered it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (52) raised this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen (0.5) and mean arterial pressure (61.33). Blood urea nitrogen (8) and temperature (36.56) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
+  },
+  {
+    "patient_id": "p000087",
+    "summary": "Time in the ICU (46) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-3.07), heart rate (77), and blood urea nitrogen (15) Fraction of inspired oxygen (0.5) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (46) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-3.07), heart rate (77), and blood urea nitrogen (15) Fraction of inspired oxygen (0.5) raised it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (46) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-3.07), heart rate (77), and blood urea nitrogen (15). Fraction of inspired oxygen (0.5) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
+  },
+  {
+    "patient_id": "p000105",
+    "summary": "Time in the ICU (37) lowered this patient's predicted sepsis risk. Blood urea nitrogen (62), white blood cell count (24.3), AST (278), and creatinine (3.6) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": true,
+    "backend": "distilbart"
+  },
+  {
+    "patient_id": "p000108",
+    "summary": "Time in the ICU (51) raised this patient's predicted sepsis risk the most, followed by mean arterial pressure (68), lactate (1), and heart rate (96) Temperature (36.56) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (51) raised this patient's predicted sepsis risk the most, followed by mean arterial pressure (68), lactate (1), and heart rate (96) Temperature (36.56) lowered it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (51) raised this patient's predicted sepsis risk the most, followed by mean arterial pressure (68), lactate (1), and heart rate (96). Temperature (36.56) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
+  },
+  {
+    "patient_id": "p000110",
+    "summary": "Time in the ICU (40) lowered this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen (0.4), lactate (1.59), time between hospital and ICU admission (-116.45) and heart rate (73). These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": true,
+    "backend": "distilbart"
+  },
+  {
+    "patient_id": "p000117",
+    "summary": "Time in the ICU (48) lowered this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen (0.4), heart rate (58), lactate (1.59), and temperature (36.33). These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": true,
+    "backend": "distilbart"
+  },
+  {
+    "patient_id": "p000120",
+    "summary": "Time in the ICU (40) lowered this patient's predicted sepsis risk the most, followed by white blood cell count (6.8) Heart rate (110), AST (5603) and time between hospital and ICU admission raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (40) lowered this patient's predicted sepsis risk the most, followed by white blood cell count (6.8) Heart rate (110), AST (5603) and time between hospital and ICU admission raised it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (40) lowered this patient's predicted sepsis risk the most, followed by white blood cell count (6.8). Heart rate (110), AST (5603), and time between hospital and ICU admission (-0.02) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
+  },
+  {
+    "patient_id": "p000123",
+    "summary": "Heart rate (108) raised this patient's predicted sepsis risk the most, followed by time in ICU (50) and time between hospital and ICU admission (-0.03) Temperature (36.67) and fraction of inspired oxygen (0.35) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Heart rate (108) raised this patient's predicted sepsis risk the most, followed by time in ICU (50) and time between hospital and ICU admission (-0.03) Temperature (36.67) and fraction of inspired oxygen (0.35) lowered it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Heart rate (108) raised this patient's predicted sepsis risk the most, followed by time in the ICU (50) and time between hospital and ICU admission (-0.03). Temperature (36.67) and fraction of inspired oxygen (0.35) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
+  },
+  {
+    "patient_id": "p000132",
+    "summary": "Time in the ICU (56) raised this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen (0.5) and time between hospital and ICU admission (-0.02) Temperature (37) and heart rate (69) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (56) raised this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen (0.5) and time between hospital and ICU admission (-0.02) Temperature (37) and heart rate (69) lowered it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (56) raised this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen (0.5) and time between hospital and ICU admission (-0.02). Temperature (37) and heart rate (69) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
+  },
+  {
+    "patient_id": "p000149",
+    "summary": "Time in the ICU (25) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission. Fraction of inspired oxygen (0.5), AST (60), and creatinine (6.6) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": true,
+    "backend": "distilbart"
+  },
+  {
+    "patient_id": "p000153",
+    "summary": "Time in the ICU (23) lowered this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen (0.4) and lactate (1.59) Time between hospital and ICU admission (-852.03) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (23) lowered this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen (0.4) and lactate (1.59) Time between hospital and ICU admission (-852.03) raised it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (23) lowered this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen (0.4) and lactate (1.59). Heart rate (106) and time between hospital and ICU admission (-852.03) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "warnings": [
+      "leaves out: HR"
+    ]
+  },
+  {
+    "patient_id": "p000158",
+    "summary": "Time in the ICU (40) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-95.29), heart rate (76), and temperature (36.83) Lactate (1.4) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (40) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-95.29), heart rate (76), and temperature (36.83) Lactate (1.4) raised it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (40) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-95.29), heart rate (76), and temperature (36.83). Lactate (1.4) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
+  },
+  {
+    "patient_id": "p000159",
+    "summary": "Time in the ICU (37) lowered this patient's predicted sepsis risk. White blood cell count (23.7), lactate (1), and AST (69) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": true,
+    "backend": "distilbart",
+    "warnings": [
+      "leaves out: HospAdmTime"
+    ]
+  },
+  {
+    "patient_id": "p000161",
+    "summary": "Time in the ICU (23) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-2.61) Temperature (37.78), blood urea nitrogen (29), and creatinine (3) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (23) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-2.61) Temperature (37.78), blood urea nitrogen (29), and creatinine (3) raised it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (23) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-2.61). Temperature (37.78), blood urea nitrogen (29), and creatinine (3) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
+  },
+  {
+    "patient_id": "p000163",
+    "summary": "Time in the ICU (41) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-112.4), lactate (1.59), blood urea nitrogen (4), and fraction of inspired oxygen (0.4). These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": true,
+    "backend": "distilbart"
+  },
+  {
+    "patient_id": "p000170",
+    "summary": "Time in the ICU (52) raised this patient's predicted sepsis risk the most, followed by mean arterial pressure (67.67) and heart rate (99) Time between hospital and ICU admission (-51.4) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (52) raised this patient's predicted sepsis risk the most, followed by mean arterial pressure (67.67) and heart rate (99) Time between hospital and ICU admission (-51.4) lowered it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (52) raised this patient's predicted sepsis risk the most, followed by mean arterial pressure (67.67) and heart rate (99). Time between hospital and ICU admission (-51.4) and fraction of inspired oxygen (0.4) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "warnings": [
+      "leaves out: FiO2"
+    ]
+  },
+  {
+    "patient_id": "p000173",
+    "summary": "Time in the ICU (24) lowered this patient's predicted sepsis risk the most, followed by white blood cell count (5.9), temperature (37.06), heart rate (49) and fraction of inspired oxygen (0.4). These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": true,
+    "backend": "distilbart"
+  },
+  {
+    "patient_id": "p000182",
+    "summary": "Time in the ICU (47) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-13.46), fraction of inspired oxygen (0.4), heart rate (78), and white blood cell count (9.7). These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": true,
+    "backend": "distilbart"
+  },
+  {
+    "patient_id": "p000186",
+    "summary": "Fraction of inspired oxygen (0.5) raised this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-0.03) and lactate (1) Time in the ICU (47) and white blood cell count (9.3) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Fraction of inspired oxygen (0.5) raised this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-0.03) and lactate (1) Time in the ICU (47) and white blood cell count (9.3) lowered it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Fraction of inspired oxygen (0.5) raised this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-0.03) and lactate (1). Time in the ICU (47) and white blood cell count (9.3) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
+  },
+  {
+    "patient_id": "p000195",
+    "summary": "Time in the ICU (31) lowered this patient's predicted sepsis risk the most, followed by white blood cell count (8.7), temperature (37) and lactate. Time between hospital and ICU admission (0) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": true,
+    "backend": "distilbart"
+  },
+  {
+    "patient_id": "p000197",
+    "summary": "Time in the ICU (42) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-14.35) and heart rate (77) Fraction of inspired oxygen (0.5) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (42) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-14.35) and heart rate (77) Fraction of inspired oxygen (0.5) raised it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (42) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-14.35) and heart rate (77). Fraction of inspired oxygen (0.5) and lactate (0.8) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "warnings": [
+      "leaves out: Lactate"
+    ]
+  },
+  {
+    "patient_id": "p000200",
+    "summary": "Time in the ICU (44) lowered this patient's predicted sepsis risk the most, followed by white blood cell count (6.4), temperature (36.06), and fraction of inspired oxygen (0.4) Time between hospital and ICU admission (-0.02) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (44) lowered this patient's predicted sepsis risk the most, followed by white blood cell count (6.4), temperature (36.06), and fraction of inspired oxygen (0.4) Time between hospital and ICU admission (-0.02) raised it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (44) lowered this patient's predicted sepsis risk the most, followed by white blood cell count (6.4), temperature (36.06), and fraction of inspired oxygen (0.4). Time between hospital and ICU admission (-0.02) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
+  },
+  {
+    "patient_id": "p000203",
+    "summary": "Time in the ICU (82) raised this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen (1), AST (1155), heart rate (94), and blood urea nitrogen (40). These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": true,
+    "backend": "distilbart"
+  },
+  {
+    "patient_id": "p000209",
+    "summary": "Time in the ICU (44) lowered this patient's predicted sepsis risk the most, followed by temperature (36.11), lactate (1.59), and fraction of inspired oxygen (0.4) Time between hospital and ICU admission (-0.02) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (44) lowered this patient's predicted sepsis risk the most, followed by temperature (36.11), lactate (1.59), and fraction of inspired oxygen (0.4) Time between hospital and ICU admission (-0.02) raised it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (44) lowered this patient's predicted sepsis risk the most, followed by temperature (36.11), lactate (1.59), and fraction of inspired oxygen (0.4). Time between hospital and ICU admission (-0.02) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
+  },
+  {
+    "patient_id": "p000211",
+    "summary": "Time between hospital and ICU admission (-67.75) lowered this patient's predicted sepsis risk the most. lactate (1.59), heart rate (88), fraction of inspired oxygen (0.4), and temperature (36.83) lowered the risk. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": true,
+    "backend": "distilbart"
+  },
+  {
+    "patient_id": "p000212",
+    "summary": "Time in the ICU (43) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-19.86), heart rate (67), and lactate (1.59) Fraction of inspired oxygen (0.5) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (43) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-19.86), heart rate (67), and lactate (1.59) Fraction of inspired oxygen (0.5) raised it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (43) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-19.86), heart rate (67), and lactate (1.59). Fraction of inspired oxygen (0.5) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
+  },
+  {
+    "patient_id": "p000218",
+    "summary": "Time in the ICU (45) lowered this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen (0.4) and temperature (36.78) Time between hospital and ICU admission (-460.98) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (45) lowered this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen (0.4) and temperature (36.78) Time between hospital and ICU admission (-460.98) raised it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (45) lowered this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen (0.4) and temperature (36.78). AST (50) and time between hospital and ICU admission (-460.98) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "warnings": [
+      "leaves out: AST"
+    ]
+  },
+  {
+    "patient_id": "p000220",
+    "summary": "Time in the ICU (54) raised this patient's predicted sepsis risk the most, followed by temperature (37.6), heart rate (109), and blood urea nitrogen (73) Time between hospital and ICU admission (-33.7) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (54) raised this patient's predicted sepsis risk the most, followed by temperature (37.6), heart rate (109), and blood urea nitrogen (73) Time between hospital and ICU admission (-33.7) lowered it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (54) raised this patient's predicted sepsis risk the most, followed by temperature (37.6), heart rate (109), and blood urea nitrogen (73). Time between hospital and ICU admission (-33.7) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
+  },
+  {
+    "patient_id": "p000227",
+    "summary": "Time in the ICU (38) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-33.11) Fraction of inspired oxygen (0.5), white blood cell count (20.4), and blood urea nitrogen (71) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (38) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-33.11) Fraction of inspired oxygen (0.5), white blood cell count (20.4), and blood urea nitrogen (71) raised it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (38) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-33.11). Fraction of inspired oxygen (0.5), white blood cell count (20.4), and blood urea nitrogen (71) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
+  },
+  {
+    "patient_id": "p000229",
+    "summary": "Time in the ICU (27) lowered this patient's predicted sepsis risk the most, followed by blood urea nitrogen. Temperature (37.67), time between hospital and ICU admission (-0.03) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": true,
+    "backend": "distilbart",
+    "warnings": [
+      "leaves out: Resp"
+    ]
+  },
+  {
+    "patient_id": "p000236",
+    "summary": "Time in the ICU (24) lowered this patient's predicted sepsis risk the most, followed by lactate (1.59), fraction of inspired oxygen (0.4), and temperature (36.94) Time between hospital and ICU admission (-0.03) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (24) lowered this patient's predicted sepsis risk the most, followed by lactate (1.59), fraction of inspired oxygen (0.4), and temperature (36.94) Time between hospital and ICU admission (-0.03) raised it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (24) lowered this patient's predicted sepsis risk the most, followed by lactate (1.59), fraction of inspired oxygen (0.4), and temperature (36.94). Time between hospital and ICU admission (-0.03) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
+  },
+  {
+    "patient_id": "p000237",
+    "summary": "Time in the ICU (31) lowered this patient's predicted sepsis risk the most, followed by white blood cell count (8.2), lactate (1.59), and temperature (36.72) Time between hospital and ICU admission (-0.01) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (31) lowered this patient's predicted sepsis risk the most, followed by white blood cell count (8.2), lactate (1.59), and temperature (36.72) Time between hospital and ICU admission (-0.01) raised it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (31) lowered this patient's predicted sepsis risk the most, followed by white blood cell count (8.2), lactate (1.59), and temperature (36.72). Time between hospital and ICU admission (-0.01) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
+  },
+  {
+    "patient_id": "p000242",
+    "summary": "Time in the ICU (40) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission. White blood cell count (16.8), blood urea nitrogen (30), and lactate (1.3) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": true,
+    "backend": "distilbart"
+  },
+  {
+    "patient_id": "p000243",
+    "summary": "Time in the ICU (46) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-5.16), lactate (1.59), fraction of inspired oxygen (0.4) and heart rate (51). These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": true,
+    "backend": "distilbart"
+  },
+  {
+    "patient_id": "p000250",
+    "summary": "Time in the ICU (44) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-31.16) Fraction of inspired oxygen (0.5), heart rate (99), and blood urea nitrogen (31) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (44) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-31.16) Fraction of inspired oxygen (0.5), heart rate (99), and blood urea nitrogen (31) raised it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (44) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-31.16). Fraction of inspired oxygen (0.5), heart rate (99), and blood urea nitrogen (31) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
+  },
+  {
+    "patient_id": "p000253",
+    "summary": "Time in the ICU (27) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-40.51), temperature (37), and heart rate (85) Fraction of inspired oxygen (0.5) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (27) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-40.51), temperature (37), and heart rate (85) Fraction of inspired oxygen (0.5) raised it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (27) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-40.51), temperature (37), and heart rate (85). Fraction of inspired oxygen (0.5) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
+  },
+  {
+    "patient_id": "p000255",
+    "summary": "Time in the ICU (29) lowered this patient's predicted sepsis risk the most, followed by heart rate (68) Fraction of inspired oxygen (0.5), lactate (1.5) and mean arterial pressure (54) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "backend": "distilbart",
+    "failure_reason": "says both raised and lowered in one sentence, so no direction can be checked: 'Time in the ICU (29) lowered this patient's predicted sepsis risk the most, followed by heart rate (68) Fraction of inspired oxygen (0.5), lactate (1.5) and mean arterial pressure (54) raised it.'",
+    "failure_types": [
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (29) lowered this patient's predicted sepsis risk the most, followed by heart rate (68). Fraction of inspired oxygen (0.5), lactate (1.5), and mean arterial pressure (54) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis."
   }
 ]
