@@ -1,9 +1,7 @@
 
-
 import { useEffect, useState } from "react";
 
-// Real patient examples from the Week 4 TFT test predictions.
-// These match data/sample/predictions_sample.json.
+// Real patient examples from the TFT test predictions.
 const examples = [
     {
         site: "A",
@@ -12,6 +10,7 @@ const examples = [
         developed_sepsis: true,
         risk_score_6h: 0.2125,
         risk_score_12h: 0.228915,
+        risk_score_24h: 0.7449,
     },
     {
         site: "B",
@@ -20,6 +19,7 @@ const examples = [
         developed_sepsis: false,
         risk_score_6h: 0.003162,
         risk_score_12h: 0.004014,
+        risk_score_24h: 0.0054,
     },
 ];
 
@@ -98,6 +98,15 @@ function RiskScore() {
                         </p>
 
                         <p>
+                            24h TFT Score:{" "}
+                            <strong>
+                                {patient.risk_score_24h === null
+                                    ? "Pending"
+                                    : `${(patient.risk_score_24h * 100).toFixed(2)}%`}
+                            </strong>
+                        </p>
+
+                        <p>
                             Actual Outcome:{" "}
                             <strong>
                                 {patient.developed_sepsis
@@ -110,7 +119,7 @@ function RiskScore() {
             </div>
 
             <p className="placeholder">
-                These are real predictions from the Week 4 TFT
+                These are real predictions from the TFT
                 models, not live patient monitoring. The scores
                 are experimental and have not been validated
                 for clinical use.
