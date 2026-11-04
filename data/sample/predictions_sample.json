@@ -1,0 +1,82 @@
+[
+    {
+        "patient_id": "p000619",
+        "risk_score": 0.0125
+    },
+    {
+        "patient_id": "p001370",
+        "risk_score": 0.0147
+    },
+    {
+        "patient_id": "p003455",
+        "risk_score": 0.0601
+    },
+    {
+        "patient_id": "p004982",
+        "risk_score": 0.0145
+    },
+    {
+        "patient_id": "p005007",
+        "risk_score": 0.0395
+    },
+    {
+        "patient_id": "p010924",
+        "risk_score": 0.012
+    },
+    {
+        "patient_id": "p014879",
+        "risk_score": 0.0129
+    },
+    {
+        "patient_id": "p019680",
+        "risk_score": 0.0862
+    },
+    {
+        "patient_id": "p100056",
+        "risk_score": 0.0192
+    },
+    {
+        "patient_id": "p100488",
+        "risk_score": 0.0171
+    },
+    {
+        "patient_id": "p101405",
+        "risk_score": 0.0622
+    },
+    {
+        "patient_id": "p104497",
+        "risk_score": 0.015
+    },
+    {
+        "patient_id": "p105904",
+        "risk_score": 0.0125
+    },
+    {
+        "patient_id": "p109064",
+        "risk_score": 0.0119
+    },
+    {
+        "patient_id": "p109388",
+        "risk_score": 0.0125
+    },
+    {
+        "patient_id": "p111054",
+        "risk_score": 0.0169
+    },
+    {
+        "patient_id": "p111162",
+        "risk_score": 0.0142
+    },
+    {
+        "patient_id": "p112954",
+        "risk_score": 0.0131
+    },
+    {
+        "patient_id": "p115499",
+        "risk_score": 0.0297
+    },
+    {
+        "patient_id": "p116379",
+        "risk_score": 0.012
+    }
+]
