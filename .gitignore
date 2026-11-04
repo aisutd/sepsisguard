@@ -7,5 +7,4 @@ lightning_logs/
 data/raw/
 
 # Cleaned data: too big for GitHub (train.csv is 229 MB), regenerate with clean_patients.py
-data/processed/train.csv
-data/processed/test.csv
+data/processed/*.csv
