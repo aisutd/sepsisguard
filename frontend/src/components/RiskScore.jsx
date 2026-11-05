@@ -119,6 +119,13 @@ function RiskScore() {
             </div>
 
             <p className="placeholder">
+                Longer prediction horizons label more patient-hours
+                as positive, which can affect risk scores.
+                Compare patients within the same prediction horizon,
+                rather than directly comparing scores across horizons.
+            </p>
+
+            <p className="placeholder">
                 These are real predictions from the TFT
                 models, not live patient monitoring. The scores
                 are experimental and have not been validated
