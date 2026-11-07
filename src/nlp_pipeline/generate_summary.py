@@ -16,9 +16,10 @@ Two ways to write the summary ("backends"):
              it cannot invent a feature. Fast, needs no model download.
 
   distilbart Writes the template's feature sentences first, then asks
-             DistilBART to rephrase them and adds the caveat itself. Kept so we
-             can measure how often a language model drifts from its input. Its
-             output must pass verify_summary.py before we use it.
+             DistilBART to rephrase each sentence separately and adds the
+             caveat itself. Kept so we can measure how often a language model
+             drifts from its input. Its output must pass verify_summary.py
+             before we use it.
 
 What a SHAP value means here: a positive value pushed this patient's predicted
 sepsis risk UP and a negative value pushed it DOWN. That sign is the only thing
@@ -126,18 +127,21 @@ def join_names(names):
 # Backend 1: template
 # ---------------------------------------------------------------------------
 
-def template_body(entry):
+def template_sentences(entry):
     """Build the feature sentences (everything except the caveat) from a fixed pattern.
 
-    Features are split by the sign of their SHAP value and each group keeps
-    its strongest-first order. The group with the strongest feature comes
-    first, e.g.:
+    Returns a list with one sentence per direction group (at most two: one
+    "raised", one "lowered"). Features are split by the sign of their SHAP
+    value and each group keeps its strongest-first order. The group with the
+    strongest feature comes first, e.g.:
 
-        "Lactate (3.1) raised this patient's predicted sepsis risk the most,
-        followed by time in the ICU (42) and heart rate (118). Temperature
-        (36.2) and age (71) lowered it."
+        ["Lactate (3.1) raised this patient's predicted sepsis risk the most,
+          followed by time in the ICU (42) and heart rate (118).",
+         "Temperature (36.2) and age (71) lowered it."]
 
-    template_summary() adds the caveat after this.
+    The list form matters for DistilBART: each sentence is rewritten on its
+    own, so the model can never merge the "raised" and "lowered" groups into
+    one sentence (see distilbart_summaries).
     """
     features = parse_top_features(entry)
     values = parse_values(entry)
@@ -174,7 +178,12 @@ def template_body(entry):
 
     # Capitalize the first letter of each sentence without touching the
     # rest (lowercasing would break names like "AST" or "troponin I").
-    return " ".join(s[0].upper() + s[1:] for s in sentences)
+    return [s[0].upper() + s[1:] for s in sentences]
+
+
+def template_body(entry):
+    """The feature sentences joined into one string, without the caveat."""
+    return " ".join(template_sentences(entry))
 
 
 def template_summary(entry):
@@ -196,34 +205,74 @@ def load_summarizer():
     return pipeline("summarization", model=DISTILBART_MODEL, device=device)
 
 
+def clean_model_sentence(text):
+    """Tidy one sentence of model output so it can be joined with the others.
+
+    Strips it, removes the space DistilBART sometimes puts before punctuation
+    ("rate ." -> "rate."), and adds a full stop if there is no ending
+    punctuation, so the next sentence never gets glued onto this one.
+    """
+    text = text.strip()
+    text = re.sub(r"\s+([.,!?;:])", r"\1", text)
+    if text and text[-1] not in ".!?":
+        text += "."
+    return text
+
+
 def distilbart_summaries(entries, batch_size=DISTILBART_BATCH_SIZE):
-    """Give DistilBART each patient's template feature sentences; return the rewrites.
+    """Rewrite each patient's template sentences with DistilBART, one sentence at a time.
+
+    Why one sentence at a time: when the model was given both template
+    sentences at once ("X raised ... the most, followed by A and B. Y lowered
+    it."), it dropped the full stop between them in 27 of its 29 failures on
+    the 50 patients. "raised" and "lowered" then sat in one sentence, and
+    verify_summary.py cannot tie a feature to a direction in a sentence that
+    says both. The 2 "true reversals" (p000019, p000060) were the same mistake
+    in another form: the model moved the sentence break, so features ended up
+    next to the wrong verb. Rewriting each sentence on its own means the model
+    has no break to drop or move: each output is one sentence and we join them.
+
+    All sentences from all patients are flattened into one list and sent in
+    batches, which was about 3x faster than one call per patient (27.6 s to
+    10.7 s at batch_size 16) with identical text, because decoding is greedy.
+    We then regroup the outputs by patient, in order.
+
+    min_length is 1 because each input is a single short sentence; the old
+    value of 10 forced the model to pad a short sentence such as "Temperature
+    lowered it." with extra words. max_length stays at 80.
 
     The caveat is fixed text, so it is added here and never given to the
-    model. In a first run on 50 patients, DistilBART dropped it from 39 of 50
-    summaries because a summarizer cuts what looks like filler.
-
-    Patients are sent in batches, which was about 3x faster than one call per
-    patient on 50 patients (27.6 s to 10.7 s at batch_size 16) with identical
-    text, because decoding is greedy.
+    model (a summarizer cut it from 39 of 50 summaries as filler).
 
     Nothing else is checked here on purpose: verify_summary.py decides
     whether the output is safe to show.
     """
     if not entries:
         return []
-    source_texts = [template_body(entry) for entry in entries]
+
+    per_patient = [template_sentences(entry) for entry in entries]
+    inputs = [sentence for sentences in per_patient for sentence in sentences]
+
     results = load_summarizer()(
-        source_texts, min_length=10, max_length=80, do_sample=False,
+        inputs, min_length=1, max_length=80, do_sample=False,
         batch_size=batch_size,
     )
+    # Regrouping below relies on one output per input, in order. If the
+    # counts differ, patients would silently get each other's sentences.
+    if len(results) != len(inputs):
+        raise RuntimeError(
+            f"DistilBART returned {len(results)} outputs for {len(inputs)} sentences."
+        )
+
     summaries = []
-    for result in results:
-        text = result["summary_text"].strip()
-        # DistilBART sometimes puts a space before punctuation ("rate ." -> "rate.").
-        text = re.sub(r"\s+([.,!?;:])", r"\1", text)
-        if text and text[-1] not in ".!?":
-            text += "."  # so the caveat starts a new sentence
+    position = 0
+    for sentences in per_patient:
+        outputs = results[position:position + len(sentences)]
+        position += len(sentences)
+        cleaned = (clean_model_sentence(r["summary_text"]) for r in outputs)
+        # Skip empty outputs so they do not leave a double space; the
+        # verifier then fails a summary whose sentences all came back empty.
+        text = " ".join(s for s in cleaned if s)
         summaries.append(f"{text} {CAVEAT}")
     return summaries
 
