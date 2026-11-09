@@ -1,0 +1,53 @@
+{
+  "rule": "test.csv patients with >= 25 hourly rows; 4 who developed sepsis and 4 who did not, each drawn with pandas .sample(random_state=42) from patients sorted by patient_id. snapshot_icu_hour = hour of highest 12h TFT score.",
+  "patients": [
+    {
+      "patient_id": "p003455",
+      "site": "A",
+      "developed_sepsis": true,
+      "snapshot_icu_hour": 113
+    },
+    {
+      "patient_id": "p019680",
+      "site": "A",
+      "developed_sepsis": true,
+      "snapshot_icu_hour": 70
+    },
+    {
+      "patient_id": "p109388",
+      "site": "B",
+      "developed_sepsis": true,
+      "snapshot_icu_hour": 36
+    },
+    {
+      "patient_id": "p111054",
+      "site": "B",
+      "developed_sepsis": true,
+      "snapshot_icu_hour": 35
+    },
+    {
+      "patient_id": "p000619",
+      "site": "A",
+      "developed_sepsis": false,
+      "snapshot_icu_hour": 28
+    },
+    {
+      "patient_id": "p105904",
+      "site": "B",
+      "developed_sepsis": false,
+      "snapshot_icu_hour": 36
+    },
+    {
+      "patient_id": "p109064",
+      "site": "B",
+      "developed_sepsis": false,
+      "snapshot_icu_hour": 26
+    },
+    {
+      "patient_id": "p111162",
+      "site": "B",
+      "developed_sepsis": false,
+      "snapshot_icu_hour": 44
+    }
+  ]
+}
