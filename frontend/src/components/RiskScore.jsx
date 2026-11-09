@@ -22,6 +22,26 @@ const examples = [
         risk_score_12h: 0.0038,
         risk_score_24h: 0.0054,
     },
+
+    {
+        site: "B",
+        patient_id: "p113489",
+        ICULOS: 52,
+        developed_sepsis: true,
+        risk_score_6h: 0.0508,
+        risk_score_12h: 0.0424,
+        risk_score_24h: 0.1653,
+    },
+    {
+        site: "B",
+        patient_id: "p113981",
+        ICULOS: 37,
+        developed_sepsis: false,
+        risk_score_6h: 0.0035,
+        risk_score_12h: 0.0038,
+        risk_score_24h: 0.0061,
+    },
+
 ];
 
 
@@ -39,6 +59,9 @@ function RiskScore({ selectedPatient = null, riskData = null }) {
     // Use the dashboard's selected patient when provided.
     // Otherwise, use a local example for testing.
     const patient = selectedPatient ?? examples[exampleIndex];
+
+    const displayHour =
+        patient?.ICULOS ?? patient?.hours_in_icu ?? "Unavailable";
 
     // The overall alert must come from the backend.
     const overallAlert =
@@ -111,7 +134,7 @@ function RiskScore({ selectedPatient = null, riskData = null }) {
                 </p>
 
                 <p>
-                    ICU Hour: <strong>{patient.ICULOS}</strong>
+                    ICU Hour: <strong>{displayHour}</strong>
                 </p>
             </div>
 
