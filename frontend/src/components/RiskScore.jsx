@@ -1,7 +1,8 @@
 
 import { useEffect, useState } from "react";
 
-// Real patient examples from the TFT test predictions.
+// Historical TFT predictions for frontend testing.
+// These should be updated with final locked-model scores.
 const examples = [
     {
         site: "A",
@@ -9,7 +10,7 @@ const examples = [
         ICULOS: 116,
         developed_sepsis: true,
         risk_score_6h: 0.2125,
-        risk_score_12h: 0.228915,
+        risk_score_12h: 0.4274,
         risk_score_24h: 0.7449,
     },
     {
@@ -18,16 +19,31 @@ const examples = [
         ICULOS: 33,
         developed_sepsis: false,
         risk_score_6h: 0.003162,
-        risk_score_12h: 0.004014,
+        risk_score_12h: 0.0038,
         risk_score_24h: 0.0054,
     },
 ];
 
-function RiskScore() {
+
+const horizons = [
+    { key: "6h", label: "Urgent" },
+    { key: "12h", label: "High Risk" },
+    { key: "24h", label: "Elevated Risk" },
+];
+
+function RiskScore({ selectedPatient = null, riskData = null }) {
     const [stats, setStats] = useState(null);
     const [error, setError] = useState(false);
+    const [exampleIndex, setExampleIndex] = useState(0);
 
-    // Load the existing data pipeline statistics.
+    // Use the dashboard's selected patient when provided.
+    // Otherwise, use a local example for testing.
+    const patient = selectedPatient ?? examples[exampleIndex];
+
+    // The overall alert must come from the backend.
+    const overallAlert =
+        riskData?.overall_alert_level ?? "Awaiting backend";
+
     useEffect(() => {
         fetch(`${import.meta.env.BASE_URL}pipeline-status.json`)
             .then((response) => {
@@ -36,100 +52,157 @@ function RiskScore() {
                 }
                 return response.json();
             })
-            .then((data) => setStats(data))
+            .then(setStats)
             .catch(() => setError(true));
     }, []);
+
+    // Format model scores without treating missing data as zero.
+    function formatScore(score) {
+        if (typeof score !== "number" || !Number.isFinite(score)) {
+            return "Unavailable";
+        }
+
+        return `${(score * 100).toFixed(2)}%`;
+    }
 
     return (
         <section className="panel">
             <h2>Risk Score</h2>
 
-            <h3>Real TFT Prediction Examples</h3>
+            <h3>Patient Risk Assessment</h3>
 
+            {/* Local example selector until dashboard integration */}
+            {!selectedPatient && (
+                <div style={{ marginBottom: "1rem" }}>
+                    <label htmlFor="risk-patient-select">
+                        Select Example Patient:{" "}
+                    </label>
+
+                    <select
+                        id="risk-patient-select"
+                        value={exampleIndex}
+                        onChange={(e) =>
+                            setExampleIndex(Number(e.target.value))
+                        }
+                    >
+                        {examples.map((example, index) => (
+                            <option
+                                key={`${example.site}-${example.patient_id}`}
+                                value={index}
+                            >
+                                {example.patient_id} —{" "}
+                                {example.developed_sepsis
+                                    ? "Developed Sepsis"
+                                    : "No Sepsis"}
+                            </option>
+                        ))}
+                    </select>
+                </div>
+            )}
+
+            <div style={{ marginBottom: "1rem" }}>
+                <p>
+                    Patient ID:{" "}
+                    <strong>{patient.patient_id}</strong>
+                </p>
+
+                <p>
+                    Site: <strong>{patient.site}</strong>
+                </p>
+
+                <p>
+                    ICU Hour: <strong>{patient.ICULOS}</strong>
+                </p>
+            </div>
+
+            {/* One row for each prediction horizon */}
             <div
                 style={{
                     display: "grid",
-                    gridTemplateColumns:
-                        "repeat(auto-fit, minmax(230px, 1fr))",
-                    gap: "1rem",
+                    gap: "0.75rem",
+                    marginBottom: "1rem",
                 }}
             >
-                {examples.map((patient) => (
-                    <div
-                        key={`${patient.site}-${patient.patient_id}`}
-                        style={{
-                            border: "1px solid #ccc",
-                            borderRadius: "8px",
-                            padding: "1rem",
-                        }}
-                    >
-                        <h4>
-                            {patient.developed_sepsis
-                                ? "Patient Developed Sepsis"
-                                : "Patient Did Not Develop Sepsis"}
-                        </h4>
+                {horizons.map(({ key, label }) => {
+                    // Backend results for this horizon.
+                    const model = riskData?.horizons?.[key];
 
-                        <p>
-                            Patient ID:{" "}
-                            <strong>{patient.patient_id}</strong>
-                        </p>
+                    // Prefer the backend score if available.
+                    const score =
+                        model?.risk_score ??
+                        patient[`risk_score_${key}`] ??
+                        null;
 
-                        <p>
-                            Site: <strong>{patient.site}</strong>
-                        </p>
+                    // Never infer alert status from the score.
+                    const fired = model?.fired;
 
-                        <p>
-                            ICU Hour:{" "}
-                            <strong>{patient.ICULOS}</strong>
-                        </p>
+                    const status =
+                        fired === true
+                            ? "Fired"
+                            : fired === false
+                              ? "Not Fired"
+                              : "Awaiting backend";
 
-                        <p>
-                            6h TFT Score:{" "}
+                    return (
+                        <div
+                            key={key}
+                            style={{
+                                border: "1px solid #ccc",
+                                borderRadius: "8px",
+                                padding: "0.85rem",
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                flexWrap: "wrap",
+                                gap: "0.75rem",
+                            }}
+                        >
+                            <div>
+                                <strong>
+                                    {key} — {label}
+                                </strong>
+
+                                <p style={{ marginBottom: 0 }}>
+                                    TFT Score:{" "}
+                                    <strong>
+                                        {formatScore(score)}
+                                    </strong>
+                                </p>
+                            </div>
+
                             <strong>
-                                {(patient.risk_score_6h * 100).toFixed(2)}%
+                                {status}
                             </strong>
-                        </p>
+                        </div>
+                    );
+                })}
+            </div>
 
-                        <p>
-                            12h TFT Score:{" "}
-                            <strong>
-                                {(patient.risk_score_12h * 100).toFixed(2)}%
-                            </strong>
-                        </p>
-
-                        <p>
-                            24h TFT Score:{" "}
-                            <strong>
-                                {patient.risk_score_24h === null
-                                    ? "Pending"
-                                    : `${(patient.risk_score_24h * 100).toFixed(2)}%`}
-                            </strong>
-                        </p>
-
-                        <p>
-                            Actual Outcome:{" "}
-                            <strong>
-                                {patient.developed_sepsis
-                                    ? "Developed Sepsis"
-                                    : "No Sepsis"}
-                            </strong>
-                        </p>
-                    </div>
-                ))}
+            {/* Overall alert is controlled by backend logic */}
+            <div
+                style={{
+                    border: "1px solid #ccc",
+                    borderRadius: "8px",
+                    padding: "1rem",
+                    marginBottom: "1rem",
+                }}
+            >
+                <strong>Overall Alert Level: </strong>
+                <strong>{overallAlert}</strong>
             </div>
 
             <p className="placeholder">
-                Longer prediction horizons label more patient-hours
-                as positive, which can affect risk scores.
-                Compare patients within the same prediction horizon,
-                rather than directly comparing scores across horizons.
+                Scores are relative risk, not calibrated
+                probabilities. Longer horizons can score higher
+                because more hours are labeled as sepsis.
+                Compare patients within the same horizon,
+                not scores across horizons.
             </p>
 
             <p className="placeholder">
-                These are real predictions from the TFT
-                models, not live patient monitoring. The scores
-                are experimental and have not been validated
-                for clinical use.
+                These are experimental TFT predictions,
+                not live patient monitoring. They have not
+                been validated for clinical use.
             </p>
 
             <h3>Data Pipeline Status</h3>

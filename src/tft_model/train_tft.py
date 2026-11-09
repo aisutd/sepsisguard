@@ -16,6 +16,7 @@ from pytorch_forecasting.metrics import CrossEntropy
 from sklearn.metrics import roc_auc_score, average_precision_score
 from lightning.pytorch.callbacks import ModelCheckpoint
 from lightning.pytorch.loggers import CSVLogger
+from lightning.pytorch.callbacks import EarlyStopping
 
 # Vital signs recorded for patients
 VITALS = [
@@ -38,11 +39,50 @@ DEMOGRAPHICS = [
 ]
 
 
+# Additional historical trend features for the TFT experiment.
+TREND_FEATURES = [
+    "HR_change_6h",
+    "HR_change_12h",
+    "Resp_change_6h",
+    "Resp_change_12h",
+    "Temp_change_6h",
+    "Temp_change_12h",
+    "MAP_change_6h",
+    "MAP_change_12h",
+    "O2Sat_change_6h",
+    "O2Sat_change_12h",
+]
+
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 TRAIN_PATH = PROJECT_ROOT / "data/processed/train.csv"
 SPLIT_PATH = Path.home() / "sepsisguard_runs/week4/patient_split.csv"
 RUNS_DIR = Path.home() / "sepsisguard_runs" / "week4" # Keeps checkpoints saved outside github
 
+
+# Add trend features without changing the original model inputs.
+def load_trend_features(data):
+
+    keys = ["site", "patient_id", "ICULOS"]
+
+    trends = pd.read_csv(
+        PROJECT_ROOT / "data/processed/train_features.csv",
+        usecols=keys + TREND_FEATURES,
+    )
+
+    if trends.duplicated(keys).any():
+        raise ValueError("Duplicate patient-hours in trend data.")
+
+    data = data.merge(
+        trends,
+        on=keys,
+        how="left",
+        validate="one_to_one",
+    )
+
+    if data[TREND_FEATURES].isna().any().any():
+        raise ValueError("Missing trend features.")
+
+    return data
 
 # Get cleaned data from paitents with 24+ hours of it, then select 1000 paitents at random
 def load_training_sample(n_patients=1000):
@@ -225,9 +265,8 @@ def load_fixed_split(data):
 
     return train_data, val_data
 
-
 #Same function as seen in prepare_data.py but now using binary classification
-def create_dataloaders(train_data, val_data, batch_size=32):
+def create_dataloaders(train_data, val_data, batch_size=32, use_trends=False):
 
     train_data = train_data.copy()
     val_data = val_data.copy()
@@ -258,7 +297,9 @@ def create_dataloaders(train_data, val_data, batch_size=32):
         static_reals=DEMOGRAPHICS,
 
         time_varying_known_reals=["ICULOS"],
-        time_varying_unknown_reals=VITALS + LABS,
+        time_varying_unknown_reals=(
+            VITALS + LABS + (TREND_FEATURES if use_trends else [])
+        ),
         # Sepsis labels are retrospective and must not be model inputs.
         time_varying_unknown_categoricals=[],
         target_normalizer=NaNLabelEncoder(),
@@ -292,8 +333,10 @@ def train_model(
     train_dataset,
     train_loader,
     val_loader,
-    run_name="tft_6h",
+    run_name="tft_12h_lr0003",
     max_epochs=3,
+    learning_rate=0.0003,
+    early_stopping_patience=1,
 ):
 
     # Make the training run reproducible
@@ -302,7 +345,7 @@ def train_model(
     # Initialize the Temporal Fusion Transformer
     tft = TemporalFusionTransformer.from_dataset(
         train_dataset,
-        learning_rate=0.001,
+        learning_rate=learning_rate,
         hidden_size=8,
         attention_head_size=1,
         dropout=0.1,
@@ -328,6 +371,18 @@ def train_model(
         auto_insert_metric_name=False,
     )
 
+    # Save the best checkpoint and optionally stop early.
+    callbacks = [checkpoint]
+
+    if early_stopping_patience is not None:
+        early_stopping = EarlyStopping(
+            monitor="val_loss",
+            patience=early_stopping_patience,
+            mode="min",
+            min_delta=0.0,
+        )
+        callbacks.append(early_stopping)
+
     # Record training and validation metrics for each epoch.
     logger = CSVLogger(
         save_dir=str(RUNS_DIR / "logs"),
@@ -344,7 +399,7 @@ def train_model(
         gradient_clip_val=0.1,
         num_sanity_val_steps=0,
         logger=logger,
-        callbacks=[checkpoint],
+        callbacks=callbacks,
         enable_checkpointing=True,
     )
 
@@ -374,7 +429,6 @@ def train_model(
     )
 
     return best_tft
-
 
 def generate_predictions(tft, train_dataset):
 
@@ -557,7 +611,6 @@ def evaluate_model(tft, train_dataset):
     return auroc, auprc
 
 # score the entire dataset
-
 def export_full_test_scores(horizon="6h"):
 
     """Generate risk scores for every eligible test patient-hour."""
@@ -754,15 +807,168 @@ def export_full_test_scores(horizon="6h"):
 
     return results
 
+# Export validation predictions for threshold selection.
+def export_validation_scores(horizon="6h"):
+
+    if horizon not in ["6h", "12h", "24h"]:
+        raise ValueError("Invalid prediction horizon.")
+
+    # Use the best existing checkpoint for each horizon.
+    checkpoint_names = {
+        "6h": "epoch00-loss0.1009.ckpt",
+        "12h": "epoch00-loss0.1443.ckpt",
+        "24h": "epoch00-loss0.2044.ckpt",
+    }
+
+    checkpoint_path = (
+        RUNS_DIR
+        / "checkpoints"
+        / f"tft_{horizon}"
+        / checkpoint_names[horizon]
+    )
+
+    if not checkpoint_path.exists():
+        raise FileNotFoundError(checkpoint_path)
+
+    # Load the trained model without retraining.
+    tft = TemporalFusionTransformer.load_from_checkpoint(
+        checkpoint_path
+    )
+
+    # Recreate the original patient selection and split.
+    data = load_training_horizon(
+        horizon=horizon,
+        n_patients=23823
+    )
+
+    train_data, val_data = load_fixed_split(data)
+    val_data = val_data.copy()
+
+    row_cols = ["site", "patient_id", "ICULOS"]
+
+    # Ensure validation patients do not overlap training patients.
+    train_ids = set(zip(
+        train_data["site"], train_data["patient_id"]
+    ))
+    val_ids = set(zip(
+        val_data["site"], val_data["patient_id"]
+    ))
+
+    if train_ids & val_ids:
+        raise ValueError("Training/validation patient overlap.")
+
+    if val_data.duplicated(row_cols).any():
+        raise ValueError("Duplicate validation patient-hours.")
+
+    # Use the correct classification target for this horizon.
+    val_data["SepsisClass"] = (
+        val_data["SepsisLabel"].astype(int).astype(str)
+    )
+
+    val_data = val_data.sort_values(
+        row_cols
+    ).reset_index(drop=True)
+
+    # Reuse the training model's original encoders and scalers.
+    val_dataset = TimeSeriesDataSet.from_parameters(
+        tft.dataset_parameters,
+        val_data,
+        predict=False,
+        stop_randomization=True,
+    )
+
+    val_loader = val_dataset.to_dataloader(
+        train=False,
+        batch_size=64,
+        num_workers=0,
+    )
+
+    # Generate predictions on the validation dataset.
+    predictions = tft.predict(
+        val_loader,
+        mode=("raw", "prediction"),
+        return_index=True,
+        return_y=True,
+        trainer_kwargs={
+            "accelerator": "mps",
+            "devices": 1,
+            "logger": False,
+        },
+    )
+
+    # Extract positive-class probabilities.
+    positive_class = (
+        val_dataset.target_normalizer.classes_["1"]
+    )
+
+    scores = torch.softmax(
+        predictions.output,
+        dim=-1,
+    )[..., positive_class].reshape(-1).cpu().numpy()
+
+    true_labels = (
+        predictions.y[0]
+        .reshape(-1)
+        .cpu()
+        .numpy()
+        .astype(int)
+    )
+
+    # Associate each prediction with its patient and ICU hour.
+    results = predictions.index[row_cols].copy()
+    results["y_true"] = true_labels
+    results["risk_score"] = scores
+
+    # Verify the predicted labels match the original rows.
+    aligned = results.merge(
+        val_data[row_cols + ["SepsisLabel"]],
+        on=row_cols,
+        how="left",
+        validate="one_to_one",
+    )
+
+    if aligned["SepsisLabel"].isna().any():
+        raise ValueError("Missing validation labels.")
+
+    if not (
+        aligned["y_true"] == aligned["SepsisLabel"]
+    ).all():
+        raise ValueError("Validation labels are misaligned.")
+
+    if not results["risk_score"].between(0, 1).all():
+        raise ValueError("Invalid prediction scores.")
+
+    # Save validation scores separately from test scores.
+    output_path = (
+        PROJECT_ROOT
+        / "data/processed"
+        / f"tft_val_scores_{horizon}.csv"
+    )
+
+    results.to_csv(output_path, index=False)
+
+    print(f"\n{horizon} VALIDATION EXPORT COMPLETE")
+    print("Validation patients:", len(val_ids))
+    print("Scored patients:", results.groupby(
+        ["site", "patient_id"]
+    ).ngroups)
+    print("Patient-hours scored:", len(results))
+    print("Positive hours:", int(true_labels.sum()))
+    print("Positive rate:", round(true_labels.mean(), 4))
+    print("Saved to:", output_path)
+
+    return results
+
 # What runs when script is ran in order to check everything is correct
 if __name__ == "__main__":
 
     data = load_training_horizon(
-    horizon="24h",
-    n_patients=23823
+    horizon="12h",
+    n_patients=23823,
     )
 
     train_data, val_data = load_fixed_split(data)
+
 
     print("Total patients:", data.groupby(
         ["site", "patient_id"]
@@ -803,7 +1009,7 @@ if __name__ == "__main__":
 
     # Dataloader check
     train_dataset, val_dataset, train_loader, val_loader = (
-        create_dataloaders(train_data, val_data)
+        create_dataloaders(train_data, val_data, use_trends=False,)
     )
 
     print("\nTraining windows:", len(train_dataset))
@@ -824,12 +1030,10 @@ if __name__ == "__main__":
     train_dataset,
     train_loader,
     val_loader,
-    run_name="tft_24h"
+    run_name="tft_12h_trends",
+    max_epochs=3,
     )
 
     # We'll generate the sample predictions after training.
     # predictions = generate_predictions(tft, train_dataset)
     # auroc, auprc = evaluate_model(tft, train_dataset)
-
-
-
