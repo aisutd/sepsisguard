@@ -34,9 +34,9 @@ A list of 8 objects, one per patient, in the order shown in the table above.
   "imputed_share": 0.4,
   "imputed_count": 14,
   "total_inputs": 35,
-  "imputed_fields": ["Lactate", "..."],
+  "imputed_fields": ["Temp", "SBP", "DBP", "..."],
   "confidence": "medium",
-  "inputs_at_snapshot": { "HR": 98.0, "Temp": 37.2, "...": 0.0 }
+  "inputs_at_snapshot": { "HR": 81.0, "Temp": 36.56, "...": 0.0 }
 }
 ```
 
@@ -44,7 +44,7 @@ A list of 8 objects, one per patient, in the order shown in the table above.
 |---|---|---|
 | `patient_id` | string | Patient ID, e.g. `p003455`. This is the key used to join with every other file. |
 | `site` | `"A"` or `"B"` | Hospital the patient came from. |
-| `snapshot_icu_hour` | int | The ICU hour the screen shows: the hour of this patient's highest 12h TFT score. |
+| `snapshot_icu_hour` | int | The ICU hour the screen shows. It was set to the hour of this patient's highest 12h TFT score using the first TFT scores, then locked. Under the final 12h model the highest score can fall at a different hour (e.g. 94 for p003455); the snapshot hour does not move. |
 | `total_icu_hours` | int | How many hours the patient's ICU stay lasted. |
 | `developed_sepsis` | bool | The real outcome. On screen, always label it **"demo only"**, because a real ICU would not know it yet. |
 | `imputed_share` | float, 0–1 | Share of the 35 model inputs that were filled in at the snapshot hour instead of measured. |
@@ -61,9 +61,9 @@ A list of 8 objects, one per patient, in the same order.
 {
   "patient_id": "p003455",
   "snapshot_icu_hour": 113,
-  "scores": { "6h": 0.0971, "12h": 0.5815, "24h": 0.081 },
+  "scores": { "6h": 0.0971, "12h": 0.0427, "24h": 0.081 },
   "history": [
-    { "icu_hour": 25, "6h": 0.0048, "12h": 0.0041, "24h": 0.0057 },
+    { "icu_hour": 29, "6h": 0.0048, "12h": 0.0032, "24h": 0.0057 },
     "...one entry per hour up to and including the snapshot hour"
   ]
 }
@@ -71,8 +71,8 @@ A list of 8 objects, one per patient, in the same order.
 
 | Field | Type | Meaning |
 |---|---|---|
-| `scores` | object | TFT risk scores at the snapshot hour for the 6h, 12h and 24h horizons, rounded to 4 decimals. |
-| `history` | list | One entry per hour from ICU hour 25 (the first hour the TFT can score) up to the snapshot hour, for trend lines. Hours after the snapshot are left out, so the screen never shows the future. |
+| `scores` | object | TFT risk scores at the snapshot hour for the 6h, 12h and 24h horizons, rounded to 4 decimals. 12h scores come from Arnav's final 12h model; 6h and 24h are unchanged from the first run. |
+| `history` | list | One entry per scored hour from the patient's first TFT-scored hour (ICU hour 25 at the earliest; 29 for p003455) up to the snapshot hour, for trend lines. Hours after the snapshot are left out, so the screen never shows the future. |
 
 **These scores are relative risk for ranking patients. They are not probabilities.** Don't display them as percentages.
 
