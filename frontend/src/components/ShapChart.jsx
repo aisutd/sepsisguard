@@ -1,12 +1,15 @@
-//Neelimas work goes here
 function ShapChart(){
+    // Define source model and paitent ID variables
+    const sourceModel = "XGBoost baseline";
+    const paitentId = "p000011"
+
     // Baseline importance scores derived from SHAP model output
     const topFeatures = [
-        { name: "ICULOS", value: -0.0174},
-        { name: "Temp", value: -0.0096},
-        { name: "Resp", value: -0.0069},
-        { name: "HR", value: -0.0054},
-        { name: "Lactate", value: 0.0029}
+        { name: "ICULOS", value: -0.0333},
+        { name: "Resp", value: -0.0159},
+        { name: "HR", value: -0.0084},
+        { name: "SBP", value: -0.0047},
+        { name: "Lactate", value: 0.0039}
     ];
 
     return(
@@ -25,7 +28,11 @@ function ShapChart(){
                     </li>
                 ))}
             </ul>
-        </section>
+
+        <footer className="shap-footer">
+            <p>Reasons come from {sourceModel}</p>
+        </footer>
+    </section>
     );
 }
 
