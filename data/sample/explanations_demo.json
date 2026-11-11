@@ -1,0 +1,262 @@
+[
+    {
+        "patient_id": "p000011",
+        "horizon": 12,
+        "top_features": [
+            {
+                "feature_name": "ICULOS",
+                "shap_value": -0.0333
+            },
+            {
+                "feature_name": "Resp",
+                "shap_value": -0.0159
+            },
+            {
+                "feature_name": "HR",
+                "shap_value": -0.0084
+            },
+            {
+                "feature_name": "SBP",
+                "shap_value": -0.0047
+            },
+            {
+                "feature_name": "Lactate",
+                "shap_value": 0.0039
+            }
+        ]
+    },
+    {
+        "patient_id": "p000011",
+        "horizon": 12,
+        "top_features": [
+            {
+                "feature_name": "ICULOS",
+                "shap_value": -0.0331
+            },
+            {
+                "feature_name": "Resp",
+                "shap_value": -0.0161
+            },
+            {
+                "feature_name": "HR",
+                "shap_value": -0.0084
+            },
+            {
+                "feature_name": "SBP",
+                "shap_value": -0.0047
+            },
+            {
+                "feature_name": "Lactate",
+                "shap_value": 0.004
+            }
+        ]
+    },
+    {
+        "patient_id": "p000011",
+        "horizon": 12,
+        "top_features": [
+            {
+                "feature_name": "ICULOS",
+                "shap_value": -0.0337
+            },
+            {
+                "feature_name": "Temp",
+                "shap_value": 0.0195
+            },
+            {
+                "feature_name": "HR",
+                "shap_value": -0.0182
+            },
+            {
+                "feature_name": "Resp",
+                "shap_value": -0.0137
+            },
+            {
+                "feature_name": "SBP",
+                "shap_value": -0.0047
+            }
+        ]
+    },
+    {
+        "patient_id": "p000011",
+        "horizon": 12,
+        "top_features": [
+            {
+                "feature_name": "ICULOS",
+                "shap_value": -0.0339
+            },
+            {
+                "feature_name": "Temp",
+                "shap_value": 0.0194
+            },
+            {
+                "feature_name": "HR",
+                "shap_value": -0.0183
+            },
+            {
+                "feature_name": "Resp",
+                "shap_value": -0.0138
+            },
+            {
+                "feature_name": "SBP",
+                "shap_value": -0.0046
+            }
+        ]
+    },
+    {
+        "patient_id": "p000011",
+        "horizon": 12,
+        "top_features": [
+            {
+                "feature_name": "ICULOS",
+                "shap_value": -0.0337
+            },
+            {
+                "feature_name": "Temp",
+                "shap_value": 0.02
+            },
+            {
+                "feature_name": "HR",
+                "shap_value": -0.0183
+            },
+            {
+                "feature_name": "Resp",
+                "shap_value": -0.0139
+            },
+            {
+                "feature_name": "SBP",
+                "shap_value": -0.0049
+            }
+        ]
+    },
+    {
+        "patient_id": "p000006",
+        "horizon": 12,
+        "top_features": [
+            {
+                "feature_name": "Lactate",
+                "shap_value": -0.0376
+            },
+            {
+                "feature_name": "ICULOS",
+                "shap_value": 0.0315
+            },
+            {
+                "feature_name": "HR",
+                "shap_value": 0.0219
+            },
+            {
+                "feature_name": "Resp",
+                "shap_value": -0.0206
+            },
+            {
+                "feature_name": "Temp",
+                "shap_value": -0.0114
+            }
+        ]
+    },
+    {
+        "patient_id": "p000006",
+        "horizon": 12,
+        "top_features": [
+            {
+                "feature_name": "ICULOS",
+                "shap_value": 0.0355
+            },
+            {
+                "feature_name": "HR",
+                "shap_value": 0.0231
+            },
+            {
+                "feature_name": "Resp",
+                "shap_value": 0.0227
+            },
+            {
+                "feature_name": "Temp",
+                "shap_value": -0.0144
+            },
+            {
+                "feature_name": "SBP",
+                "shap_value": -0.0075
+            }
+        ]
+    },
+    {
+        "patient_id": "p000006",
+        "horizon": 12,
+        "top_features": [
+            {
+                "feature_name": "ICULOS",
+                "shap_value": 0.0361
+            },
+            {
+                "feature_name": "HR",
+                "shap_value": 0.0237
+            },
+            {
+                "feature_name": "Resp",
+                "shap_value": 0.0229
+            },
+            {
+                "feature_name": "Temp",
+                "shap_value": -0.0145
+            },
+            {
+                "feature_name": "Lactate",
+                "shap_value": 0.0044
+            }
+        ]
+    },
+    {
+        "patient_id": "p000006",
+        "horizon": 12,
+        "top_features": [
+            {
+                "feature_name": "ICULOS",
+                "shap_value": 0.0323
+            },
+            {
+                "feature_name": "Resp",
+                "shap_value": 0.0244
+            },
+            {
+                "feature_name": "Temp",
+                "shap_value": -0.0129
+            },
+            {
+                "feature_name": "SBP",
+                "shap_value": 0.0103
+            },
+            {
+                "feature_name": "Lactate",
+                "shap_value": 0.0043
+            }
+        ]
+    },
+    {
+        "patient_id": "p000006",
+        "horizon": 12,
+        "top_features": [
+            {
+                "feature_name": "ICULOS",
+                "shap_value": 0.0324
+            },
+            {
+                "feature_name": "Resp",
+                "shap_value": 0.0238
+            },
+            {
+                "feature_name": "Temp",
+                "shap_value": -0.0123
+            },
+            {
+                "feature_name": "SBP",
+                "shap_value": 0.0105
+            },
+            {
+                "feature_name": "Lactate",
+                "shap_value": 0.0043
+            }
+        ]
+    }
+]
