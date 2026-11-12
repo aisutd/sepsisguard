@@ -1,0 +1,27 @@
+{
+  "model": "TFT",
+  "created": "2026-11-10",
+  "rule": "Each cutoff is the score at which 10% of non-sepsis patients ever trigger an alert",
+  "alert_order": "6h at or above its cutoff = Urgent, else 12h = High risk, else 24h = Elevated risk, else No alert",
+  "thresholds": {
+    "6h": 0.026924,
+    "12h": 0.034345,
+    "24h": 0.064564
+  },
+  "alert_levels": {
+    "6h": "Urgent",
+    "12h": "High risk",
+    "24h": "Elevated risk"
+  },
+  "scores_used_for_cutoffs": {
+    "6h": "validation",
+    "12h": "validation",
+    "24h": "validation"
+  },
+  "false_alarm_rate_on_test": {
+    "6h": 0.102,
+    "12h": 0.0898,
+    "24h": 0.091
+  },
+  "combined_false_alarm_rate_on_test": 0.1448
+}

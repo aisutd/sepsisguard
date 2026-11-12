@@ -25,7 +25,11 @@ from generate_summary import (
 from verify_summary import (
     MOCK_INPUT,
     VALUES_INPUT,
+    check_planted_errors,
     find_mentions,
+    plant_wrong_direction,
+    plant_wrong_feature,
+    plant_wrong_number,
     summarize_and_verify,
     verify_summary,
 )
@@ -272,35 +276,127 @@ class VerifierAcceptsGoodSummaries(unittest.TestCase):
         self.assertIn("leaves out: ICULOS, HR, Temp, Age", result["warnings"])
 
 
+def fake_model(rewrite=lambda sentence: sentence):
+    """A stand-in for the DistilBART pipeline: one output per input sentence.
+
+    `rewrite` turns each input sentence into the model's "output", so a test
+    can imitate the model changing, shortening or mangling a sentence.
+    """
+    return mock.Mock(side_effect=lambda inputs, **kwargs: [
+        {"summary_text": rewrite(sentence)} for sentence in inputs])
+
+
 class DistilbartBackend(unittest.TestCase):
     def test_caveat_is_added_by_code_not_left_to_the_model(self):
         # Whatever the model returns, the summary ends with the exact caveat,
         # and a missing final full stop does not glue it to the last sentence.
-        for model_text in ["Lactate (3.1) raised the risk.", "Lactate (3.1) raised the risk"]:
-            fake = mock.Mock(return_value=[{"summary_text": model_text}])
+        for strip_stop in [False, True]:
+            fake = fake_model(lambda s: s.rstrip(".") if strip_stop else s)
             with mock.patch.object(generator, "load_summarizer", return_value=fake):
                 summary = generator.distilbart_summary(PATIENT)
-            self.assertEqual(summary, "Lactate (3.1) raised the risk. " + CAVEAT)
+            self.assertEqual(summary, generate_summary(PATIENT))
         # The model is given the feature sentences only, not the caveat.
-        given = fake.call_args.args[0][0]
-        self.assertNotIn("model weighed", given)
-        self.assertTrue(given.startswith("Lactate (3.1) raised this patient's"))
+        for given in fake.call_args.args[0]:
+            self.assertNotIn("model weighed", given)
 
+    def test_each_sentence_is_sent_to_the_model_separately(self):
+        # The raised group and the lowered group must be two separate inputs,
+        # so the model has no full stop between them to drop.
+        fake = fake_model()
+        with mock.patch.object(generator, "load_summarizer", return_value=fake):
+            generator.distilbart_summary(PATIENT)
+        self.assertEqual(fake.call_args.args[0], generator.template_sentences(PATIENT))
+        self.assertEqual(len(fake.call_args.args[0]), 2)
+        self.assertIn("raised", fake.call_args.args[0][0])
+        self.assertNotIn("lowered", fake.call_args.args[0][0])
+        self.assertIn("lowered", fake.call_args.args[0][1])
+        self.assertEqual(fake.call_args.kwargs["min_length"], 1)
+
+    def test_a_dropped_full_stop_no_longer_merges_the_groups(self):
+        # The old failure: the model dropped the full stop between the two
+        # groups, so "raised" and "lowered" shared a sentence. Each sentence is
+        # now rewritten alone, so even with every full stop dropped the code
+        # puts one back and the groups stay apart and verifiable.
+        fake = fake_model(lambda s: s.rstrip("."))
+        with mock.patch.object(generator, "load_summarizer", return_value=fake):
+            summary = generator.distilbart_summary(PATIENT)
+        result = verify_summary(summary, PATIENT)
+        self.assertTrue(result["verified"], result["problems"])
+        self.assertNotIn("both raised and lowered", " ".join(result["problems"]))
 
     def test_batch_returns_one_summary_per_patient_in_order(self):
         other = {"patient_id": "p2", "top_features": [
             {"feature": "Age", "shap_value": -0.2, "value": 71}]}
+        # PATIENT has 2 sentences and `other` has 1, so this also checks that
+        # the flat list of outputs is regrouped to the right patients.
         fake = mock.Mock(return_value=[{"summary_text": "Lactate raised it."},
+                                       {"summary_text": "Age lowered it ."},
                                        {"summary_text": "Age lowered it ."}])
         with mock.patch.object(generator, "load_summarizer", return_value=fake):
             summaries = generator.distilbart_summaries([PATIENT, other])
             self.assertEqual(generator.generate_summaries([PATIENT, other], "distilbart"), summaries)
-        self.assertEqual(summaries, ["Lactate raised it. " + CAVEAT, "Age lowered it. " + CAVEAT])
-        self.assertEqual(len(fake.call_args.args[0]), 2)
+        self.assertEqual(summaries, ["Lactate raised it. Age lowered it. " + CAVEAT,
+                                     "Age lowered it. " + CAVEAT])
+        self.assertEqual(len(fake.call_args.args[0]), 3)
         self.assertEqual(generator.distilbart_summaries([]), [])
+
+    def test_wrong_number_of_outputs_raises(self):
+        # With one output missing, every later patient would get the wrong
+        # sentences, so this must fail loudly instead of regrouping.
+        fake = mock.Mock(return_value=[{"summary_text": "Lactate raised it."}])
+        with mock.patch.object(generator, "load_summarizer", return_value=fake):
+            with self.assertRaises(RuntimeError):
+                generator.distilbart_summaries([PATIENT])
 
     def test_template_backend_still_works_one_at_a_time(self):
         self.assertEqual(generator.generate_summaries([PATIENT], "template"), [generate_summary(PATIENT)])
+
+
+class PlantedErrors(unittest.TestCase):
+    """Plant one known error in a correct summary and check the verifier fails it for that reason."""
+
+    def setUp(self):
+        self.correct = generate_summary(PATIENT)
+        self.assertTrue(verify_summary(self.correct, PATIENT)["verified"])
+
+    def assertCaught(self, damaged, failure_type):
+        self.assertIsNotNone(damaged)
+        self.assertNotEqual(damaged, self.correct)
+        result = verify_summary(damaged, PATIENT)
+        self.assertFalse(result["verified"], damaged)
+        self.assertIn(failure_type, result["failure_types"], damaged)
+
+    def test_wrong_feature_is_caught(self):
+        damaged = plant_wrong_feature(self.correct, PATIENT)
+        # O2Sat is the first column in feature_names.py that is not in this patient's top 5.
+        self.assertTrue(damaged.startswith("Oxygen saturation (3.1) raised"), damaged)
+        self.assertNotIn("Lactate", damaged)
+        self.assertCaught(damaged, "wrong_feature")
+
+    def test_wrong_direction_is_caught(self):
+        damaged = plant_wrong_direction(self.correct, PATIENT)
+        self.assertIn("lowered this patient's predicted sepsis risk the most", damaged)
+        self.assertTrue(damaged.endswith(CAVEAT))  # the caveat is untouched
+        self.assertCaught(damaged, "wrong_direction")
+
+    def test_wrong_number_is_caught(self):
+        damaged = plant_wrong_number(self.correct, PATIENT)
+        self.assertTrue(damaged.startswith("Lactate (13.1) raised"), damaged)  # 3.1 + 10
+        self.assertCaught(damaged, "wrong_number")
+
+    def test_nothing_to_plant_returns_none(self):
+        # No quoted value means no number to damage, and no "raised"/"lowered" means nothing to swap.
+        no_values = {"patient_id": "x", "top_features": [{"feature": "HR", "shap_value": 0.4}]}
+        self.assertIsNone(plant_wrong_number(generate_summary(no_values), no_values))
+        self.assertIsNone(plant_wrong_direction("Heart rate shifted it.", no_values))
+
+    def test_all_planted_errors_are_caught_on_the_real_patients(self):
+        entries = json.loads(Path(VALUES_INPUT).read_text())
+        results = check_planted_errors(entries)
+        self.assertEqual(set(results), {"wrong_feature", "wrong_direction", "wrong_number"})
+        for kind, (caught, planted) in results.items():
+            self.assertEqual(planted, len(entries), kind)  # every patient can be damaged each way
+            self.assertEqual(caught, planted, kind)
 
 
 class FailureTypes(unittest.TestCase):

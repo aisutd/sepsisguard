@@ -36,7 +36,7 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-from feature_names import FEATURES, GROUP_TERMS
+from feature_names import FEATURES, GROUP_TERMS, readable_name
 from generate_summary import (
     CAVEAT,
     format_number,
@@ -315,6 +315,100 @@ def summarize_and_verify(entry, backend, summary=None):
     return record
 
 
+# ---------------------------------------------------------------------------
+# Step 4: prove the checker catches real errors
+# ---------------------------------------------------------------------------
+#
+# A high pass rate only means something if the checker also fails summaries
+# that are wrong. So for each patient we take their correct template summary,
+# plant exactly ONE error of each type, and confirm the checker rejects it for
+# that reason. Each plant_* function returns the damaged summary, or None if
+# this patient gives nothing to damage (for example no quoted number).
+
+def _outside_top5_name(entry):
+    """A readable feature name that is NOT one of this patient's top 5.
+
+    Only a name the verifier reads back as exactly that one feature is used,
+    so the planted error is a clean "wrong feature", not an ambiguous phrase.
+    """
+    top = dict(parse_top_features(entry))
+    for column in FEATURES:
+        if column in top:
+            continue
+        name = readable_name(column)
+        spans = find_mention_spans(name)
+        if len(spans) == 1 and spans[0][1] == {column}:
+            return name
+    return None
+
+
+def plant_wrong_feature(summary, entry):
+    """Replace the first feature's name with a feature not in the top 5."""
+    spans = find_mention_spans(summary)
+    replacement = _outside_top5_name(entry)
+    if not spans or replacement is None:
+        return None
+    original, _, start, end = spans[0]
+    if original[0].isupper():  # keep the capital at the start of a sentence
+        replacement = replacement[0].upper() + replacement[1:]
+    return summary[:start] + replacement + summary[end:]
+
+
+def plant_wrong_direction(summary, entry):
+    """Swap "raised" and "lowered" in the feature sentences; the caveat is left alone."""
+    body, caveat, tail = summary.partition(CAVEAT)
+    swapped = re.sub(
+        r"\b(raised|lowered)\b",
+        lambda m: "lowered" if m.group(1) == "raised" else "raised",
+        body,
+    )
+    return None if swapped == body else swapped + caveat + tail
+
+
+def plant_wrong_number(summary, entry):
+    """Add 10 to the first quoted value, keeping the number of decimals written."""
+    # Blank feature names first so digits inside them ("O2 sat") are not read
+    # as a number, exactly as check_numbers does.
+    blanked = summary
+    for _, _, start, end in find_mention_spans(summary):
+        blanked = blanked[:start] + " " * (end - start) + blanked[end:]
+    match = NUMBER.search(blanked)
+    if match is None:
+        return None
+    written = match.group(0)
+    decimals = len(written.split(".")[1]) if "." in written else 0
+    changed = f"{float(written) + 10:.{decimals}f}"
+    return summary[:match.start()] + changed + summary[match.end():]
+
+
+PLANTERS = {
+    "wrong_feature": plant_wrong_feature,
+    "wrong_direction": plant_wrong_direction,
+    "wrong_number": plant_wrong_number,
+}
+
+
+def check_planted_errors(entries):
+    """Plant one error of each type in every patient's template summary.
+
+    Returns {failure_type: (caught, planted)}. An error counts as caught only
+    if the summary fails AND the failure types include the one we planted, so a
+    summary that fails for some unrelated reason does not count as a catch.
+    """
+    results = {kind: [0, 0] for kind in PLANTERS}
+    for entry in entries:
+        correct = generate_summary(entry, "template")
+        for kind, plant in PLANTERS.items():
+            damaged = plant(correct, entry)
+            if damaged is None or damaged == correct:
+                continue
+            results[kind][1] += 1
+            check = verify_summary(damaged, entry)
+            if not check["verified"] and kind in check["failure_types"]:
+                results[kind][0] += 1
+    return {kind: (caught, planted) for kind, (caught, planted) in results.items()}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     parser.add_argument("--backend", default="template", choices=["template", "distilbart"])
@@ -339,6 +433,15 @@ def main():
     for r in failed:
         print(f"\n  FAIL {r['patient_id']}: {r['failure_reason']}")
         print(f"       wrote: {r['summary']}")
+
+    # Prove the checker is not just lenient: it must catch errors we plant.
+    planted = check_planted_errors(entries)
+    print()
+    for kind, (caught, total) in planted.items():
+        print(f"Deliberately wrong summaries, {kind}: {caught}/{total} caught")
+    total_caught = sum(c for c, _ in planted.values())
+    total_planted = sum(p for _, p in planted.values())
+    print(f"Deliberately wrong summaries, all types: {total_caught}/{total_planted} caught")
 
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(records, indent=2) + "\n")
