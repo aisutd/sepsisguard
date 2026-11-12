@@ -65,6 +65,16 @@ def check_number(value, label):
         raise ValueError(f"Invalid {label}: {value!r}")
 
 
+def feature_column(item):
+    """The column name of one top_features item.
+
+    The Week 3-4 exports call it "feature"; the demo data contract
+    (docs/demo_data_contract.md) calls it "feature_name". Accept both, the
+    same way backend/main.py does.
+    """
+    return item.get("feature", item.get("feature_name"))
+
+
 def parse_top_features(entry):
     """Check one patient entry and return its features, strongest first.
 
@@ -77,7 +87,7 @@ def parse_top_features(entry):
 
     features = []
     for item in entry["top_features"]:
-        name = item.get("feature")
+        name = feature_column(item)
         value = item.get("shap_value")
 
         readable_name(name)  # raises ValueError for an unknown column
@@ -103,8 +113,9 @@ def parse_values(entry):
     for item in entry["top_features"]:
         if item.get("value") is None:
             continue
-        check_number(item["value"], f"value for {item.get('feature')}")
-        values[item["feature"]] = float(item["value"])
+        column = feature_column(item)
+        check_number(item["value"], f"value for {column}")
+        values[column] = float(item["value"])
     return values
 
 

@@ -458,5 +458,53 @@ class MentionMatching(unittest.TestCase):
         self.assertTrue(verify_summary("Blood pressure raised the risk." + " " + CAVEAT, entry)["verified"])
 
 
+class DemoPatients(unittest.TestCase):
+    """Round 2: the 8 demo patients (summarize_demo.py and its saved output)."""
+
+    def test_feature_name_key_works_like_feature(self):
+        """The demo contract's "feature_name" key gives the same summary as "feature"."""
+        renamed = {"patient_id": "test", "top_features": [
+            {"feature_name": f["feature"], "shap_value": f["shap_value"], "value": f["value"]}
+            for f in PATIENT["top_features"]]}
+        self.assertEqual(generate_summary(renamed), generate_summary(PATIENT))
+        self.assertTrue(verify_summary(generate_summary(renamed), renamed)["verified"])
+
+    def test_shared_file_used_only_at_the_snapshot_hour(self):
+        """An explanation for the right patient at the wrong hour (or no hour) is ignored."""
+        import summarize_demo
+
+        patients = [{"patient_id": "p1", "snapshot_icu_hour": 30}]
+        rows = [
+            {"patient_id": "p1", "top_features": []},                   # no icu_hour
+            {"patient_id": "p1", "icu_hour": 29, "top_features": []},   # wrong hour
+            {"patient_id": "p9", "icu_hour": 30, "top_features": []},   # not a demo patient
+            {"patient_id": "p1", "icu_hour": 30, "top_features": ["ok"]},
+        ]
+        with mock.patch.object(Path, "exists", return_value=True), \
+             mock.patch.object(Path, "read_text", return_value=json.dumps(rows)):
+            found = summarize_demo.shared_explanations(patients)
+        self.assertEqual(found, {"p1": rows[3]})
+
+    def test_saved_demo_file_is_complete_and_safe(self):
+        """Every demo patient has one entry at their snapshot hour, and what the card
+        shows (summary if verified, else fallback) always passes the checker."""
+        import summarize_demo
+
+        records = json.loads(summarize_demo.OUTPUT_PATH.read_text())
+        patients = json.loads(summarize_demo.PATIENTS_PATH.read_text())
+        self.assertEqual([(r["patient_id"], r["icu_hour"]) for r in records],
+                         [(p["patient_id"], p["snapshot_icu_hour"]) for p in patients])
+        for r in records:
+            shown = r["summary"] if r["verified"] else r["fallback_summary"]
+            self.assertTrue(verify_summary(shown, r)["verified"], r["patient_id"])
+            self.assertEqual(r["verified"], r["failure_reason"] is None, r["patient_id"])
+        # The frontend copies must not drift from the data files (in Round 1 the
+        # 50-patient copy was left on the Week 4 run, so the card showed 29 failures, not 15).
+        self.assertEqual(summarize_demo.FRONTEND_COPY.read_text(), summarize_demo.OUTPUT_PATH.read_text())
+        sample = summarize_demo.REPO_ROOT / "data/sample/summaries_sample.json"
+        sample_copy = summarize_demo.REPO_ROOT / "frontend/public/summaries_sample.json"
+        self.assertEqual(sample_copy.read_text(), sample.read_text())
+
+
 if __name__ == "__main__":
     unittest.main()
