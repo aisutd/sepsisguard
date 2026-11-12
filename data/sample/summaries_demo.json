@@ -1,0 +1,333 @@
+[
+  {
+    "patient_id": "p003455",
+    "icu_hour": 113,
+    "horizon": 12,
+    "source": "XGBoost baseline",
+    "explanation_file": "computed by summarize_demo.py",
+    "top_features": [
+      {
+        "feature_name": "ICULOS",
+        "shap_value": 0.3921,
+        "value": 113.0
+      },
+      {
+        "feature_name": "HospAdmTime",
+        "shap_value": -0.0248,
+        "value": -21.25
+      },
+      {
+        "feature_name": "FiO2",
+        "shap_value": 0.0198,
+        "value": 0.5
+      },
+      {
+        "feature_name": "WBC",
+        "shap_value": 0.0195,
+        "value": 18.1
+      },
+      {
+        "feature_name": "MAP",
+        "shap_value": 0.0158,
+        "value": 54.0
+      }
+    ],
+    "summary": "Time in the ICU (113) raised this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen (0.5), white blood cell count (18.1), and mean arterial pressure (54). Time between hospital and ICU admission (-21.25) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": true,
+    "failure_reason": null,
+    "failure_types": [],
+    "fallback_summary": "Time in the ICU (113) raised this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen (0.5), white blood cell count (18.1), and mean arterial pressure (54). Time between hospital and ICU admission (-21.25) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "warnings": []
+  },
+  {
+    "patient_id": "p019680",
+    "icu_hour": 70,
+    "horizon": 12,
+    "source": "XGBoost baseline",
+    "explanation_file": "computed by summarize_demo.py",
+    "top_features": [
+      {
+        "feature_name": "ICULOS",
+        "shap_value": 0.4021,
+        "value": 70.0
+      },
+      {
+        "feature_name": "FiO2",
+        "shap_value": 0.0276,
+        "value": 0.5
+      },
+      {
+        "feature_name": "WBC",
+        "shap_value": 0.0205,
+        "value": 16.5
+      },
+      {
+        "feature_name": "HospAdmTime",
+        "shap_value": -0.0198,
+        "value": -3.57
+      },
+      {
+        "feature_name": "MAP",
+        "shap_value": -0.0101,
+        "value": 84.0
+      }
+    ],
+    "summary": "Time in the ICU (70) raised this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen (0.5) and white blood cell count. Time between hospital and ICU admission (-3.57) and mean arterial pressure (84) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": true,
+    "failure_reason": null,
+    "failure_types": [],
+    "fallback_summary": "Time in the ICU (70) raised this patient's predicted sepsis risk the most, followed by fraction of inspired oxygen (0.5) and white blood cell count (16.5). Time between hospital and ICU admission (-3.57) and mean arterial pressure (84) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "warnings": []
+  },
+  {
+    "patient_id": "p109388",
+    "icu_hour": 36,
+    "horizon": 12,
+    "source": "XGBoost baseline",
+    "explanation_file": "computed by summarize_demo.py",
+    "top_features": [
+      {
+        "feature_name": "ICULOS",
+        "shap_value": -0.0372,
+        "value": 36.0
+      },
+      {
+        "feature_name": "Lactate",
+        "shap_value": -0.0149,
+        "value": 1.59
+      },
+      {
+        "feature_name": "HospAdmTime",
+        "shap_value": 0.0144,
+        "value": 0.0
+      },
+      {
+        "feature_name": "BUN",
+        "shap_value": -0.0094,
+        "value": 15.0
+      },
+      {
+        "feature_name": "FiO2",
+        "shap_value": -0.0076,
+        "value": 0.4
+      }
+    ],
+    "summary": "Time in the ICU (36) lowered this patient's predicted sepsis risk the most, followed by lactate (1.59), blood urea nitrogen (15), and fraction of inspired oxygen (0.4). Time between hospital and ICU admission (0) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": true,
+    "failure_reason": null,
+    "failure_types": [],
+    "fallback_summary": "Time in the ICU (36) lowered this patient's predicted sepsis risk the most, followed by lactate (1.59), blood urea nitrogen (15), and fraction of inspired oxygen (0.4). Time between hospital and ICU admission (0) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "warnings": []
+  },
+  {
+    "patient_id": "p111054",
+    "icu_hour": 35,
+    "horizon": 12,
+    "source": "XGBoost baseline",
+    "explanation_file": "computed by summarize_demo.py",
+    "top_features": [
+      {
+        "feature_name": "Temp",
+        "shap_value": 0.104,
+        "value": 38.1
+      },
+      {
+        "feature_name": "ICULOS",
+        "shap_value": -0.0477,
+        "value": 35.0
+      },
+      {
+        "feature_name": "AST",
+        "shap_value": 0.0249,
+        "value": 56.0
+      },
+      {
+        "feature_name": "Lactate",
+        "shap_value": 0.0166,
+        "value": 1.13
+      },
+      {
+        "feature_name": "HospAdmTime",
+        "shap_value": -0.0149,
+        "value": -98.21
+      }
+    ],
+    "summary": "Temperature (38.1) raised this patient's predicted sepsis risk the most, followed by AST (56) and lactate (1.13). Time in the ICU (35) and time between hospital and ICU admission (-98.21) lowered it. Time between hospital admission and hospital admission also lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "failure_reason": "uses wording the template never uses: also, between, time",
+    "failure_types": [
+      "unsupported_wording"
+    ],
+    "fallback_summary": "Temperature (38.1) raised this patient's predicted sepsis risk the most, followed by AST (56) and lactate (1.13). Time in the ICU (35) and time between hospital and ICU admission (-98.21) lowered it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "warnings": []
+  },
+  {
+    "patient_id": "p000619",
+    "icu_hour": 28,
+    "horizon": 12,
+    "source": "XGBoost baseline",
+    "explanation_file": "computed by summarize_demo.py",
+    "top_features": [
+      {
+        "feature_name": "ICULOS",
+        "shap_value": -0.0339,
+        "value": 28.0
+      },
+      {
+        "feature_name": "HospAdmTime",
+        "shap_value": -0.0131,
+        "value": -60.94
+      },
+      {
+        "feature_name": "Lactate",
+        "shap_value": -0.0106,
+        "value": 1.59
+      },
+      {
+        "feature_name": "BUN",
+        "shap_value": -0.0082,
+        "value": 12.0
+      },
+      {
+        "feature_name": "FiO2",
+        "shap_value": -0.0081,
+        "value": 0.4
+      }
+    ],
+    "summary": "Time in the ICU (28) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-60.94), lactate (1.59), blood urea nitrogen (12), and fraction of inspired oxygen (0.4). These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": true,
+    "failure_reason": null,
+    "failure_types": [],
+    "fallback_summary": "Time in the ICU (28) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-60.94), lactate (1.59), blood urea nitrogen (12), and fraction of inspired oxygen (0.4). These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "warnings": []
+  },
+  {
+    "patient_id": "p105904",
+    "icu_hour": 36,
+    "horizon": 12,
+    "source": "XGBoost baseline",
+    "explanation_file": "computed by summarize_demo.py",
+    "top_features": [
+      {
+        "feature_name": "ICULOS",
+        "shap_value": -0.0329,
+        "value": 36.0
+      },
+      {
+        "feature_name": "HospAdmTime",
+        "shap_value": -0.0142,
+        "value": -8.22
+      },
+      {
+        "feature_name": "Lactate",
+        "shap_value": -0.0134,
+        "value": 1.59
+      },
+      {
+        "feature_name": "BUN",
+        "shap_value": 0.0086,
+        "value": 52.0
+      },
+      {
+        "feature_name": "FiO2",
+        "shap_value": -0.0086,
+        "value": 0.4
+      }
+    ],
+    "summary": "Time in the ICU (36) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-8.22), lactate (1.59) and fraction of inspired oxygen. Blood urea nitrogen (52) raised it, raising it to 52. Urea nitrogen was the highest level of nitrogen in the world. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "failure_reason": "names 'Urea' without saying whether it raised or lowered the risk; uses wording the template never uses: highest, in, level, nitrogen, of, raising, to, was, world",
+    "failure_types": [
+      "unsupported_wording",
+      "wrong_direction"
+    ],
+    "fallback_summary": "Time in the ICU (36) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-8.22), lactate (1.59), and fraction of inspired oxygen (0.4). Blood urea nitrogen (52) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "warnings": []
+  },
+  {
+    "patient_id": "p109064",
+    "icu_hour": 26,
+    "horizon": 12,
+    "source": "XGBoost baseline",
+    "explanation_file": "computed by summarize_demo.py",
+    "top_features": [
+      {
+        "feature_name": "ICULOS",
+        "shap_value": -0.0336,
+        "value": 26.0
+      },
+      {
+        "feature_name": "Resp",
+        "shap_value": 0.0267,
+        "value": 29.5
+      },
+      {
+        "feature_name": "HR",
+        "shap_value": 0.0144,
+        "value": 104.5
+      },
+      {
+        "feature_name": "HospAdmTime",
+        "shap_value": -0.0132,
+        "value": -4.69
+      },
+      {
+        "feature_name": "FiO2",
+        "shap_value": -0.0096,
+        "value": 0.4
+      }
+    ],
+    "summary": "Time in the ICU (26) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-4.69) and fraction of inspired oxygen (0.4). Respiratory rate (29.5), heart rate (104.5) and respiratory rate (30.5%) raised it. Heart rate was also raised to 104.5. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "failure_reason": "says 'respiratory rate' is 30.5, but the input value is 29.5; uses wording the template never uses: also, to, was",
+    "failure_types": [
+      "unsupported_wording",
+      "wrong_number"
+    ],
+    "fallback_summary": "Time in the ICU (26) lowered this patient's predicted sepsis risk the most, followed by time between hospital and ICU admission (-4.69) and fraction of inspired oxygen (0.4). Respiratory rate (29.5) and heart rate (104.5) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "warnings": []
+  },
+  {
+    "patient_id": "p111162",
+    "icu_hour": 44,
+    "horizon": 12,
+    "source": "XGBoost baseline",
+    "explanation_file": "computed by summarize_demo.py",
+    "top_features": [
+      {
+        "feature_name": "ICULOS",
+        "shap_value": -0.0242,
+        "value": 44.0
+      },
+      {
+        "feature_name": "Lactate",
+        "shap_value": -0.0158,
+        "value": 1.59
+      },
+      {
+        "feature_name": "HospAdmTime",
+        "shap_value": 0.0119,
+        "value": -0.02
+      },
+      {
+        "feature_name": "FiO2",
+        "shap_value": -0.0113,
+        "value": 0.21
+      },
+      {
+        "feature_name": "Temp",
+        "shap_value": -0.0105,
+        "value": 37.2
+      }
+    ],
+    "summary": "Time in the ICU (44) lowered this patient's predicted sepsis risk the most, followed by lactate (1.59), fraction of inspired oxygen (0.21), and temperature (37.2). Time between hospital and ICU admission (-0.02) raised it to 0.02. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "verified": false,
+    "failure_reason": "says 'Time between hospital and ICU admission' is 0.02, but the input value is -0.02; uses wording the template never uses: to",
+    "failure_types": [
+      "unsupported_wording",
+      "wrong_number"
+    ],
+    "fallback_summary": "Time in the ICU (44) lowered this patient's predicted sepsis risk the most, followed by lactate (1.59), fraction of inspired oxygen (0.21), and temperature (37.2). Time between hospital and ICU admission (-0.02) raised it. These reflect what the model weighed, based on the values it was given, not a diagnosis.",
+    "warnings": []
+  }
+]
