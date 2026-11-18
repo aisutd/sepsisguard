@@ -1,39 +1,58 @@
-function ShapChart(){
-    // Define source model and paitent ID variables
-    const sourceModel = "XGBoost baseline";
-    const paitentId = "p000011"
-
-    // Baseline importance scores derived from SHAP model output
-    const topFeatures = [
-        { name: "ICULOS", value: -0.0333},
-        { name: "Resp", value: -0.0159},
-        { name: "HR", value: -0.0084},
-        { name: "SBP", value: -0.0047},
-        { name: "Lactate", value: 0.0039}
-    ];
-
-    return(
-        // Main panel container wrapper for styling
-       <section className="panel">
-            {/* Section heading text */}
-            <h2>SHAP Feature Importance (Baseline)</h2>
-            
-            {/* Unordered list container for the features */}
-            <ul className="shap-list">
-                {/* Dynamically map over the topFeatures array to render each item */}
-                {topFeatures.map((feat, index) => (
-                    /* Individual listitem with a unique key required by React */
-                    <li key={index}>
-                        <span>{feat.name}</span>: <span>{feat.value}</span>
-                    </li>
-                ))}
-            </ul>
-
-        <footer className="shap-footer">
-            <p>Reasons come from {sourceModel}</p>
-        </footer>
-    </section>
+// Immaculate's reasons panel ("Why this score" in the Figma design).
+// Props: reasons = detail.reasons from GET /patients/{id}:
+//   { available, horizon, top_features: [{ feature_name, shap_value, value }] }
+//   or { available: false, message } when no SHAP file has this patient
+//   at their snapshot hour yet.
+// Positive SHAP value = raised the risk (orange), negative = lowered it (blue).
+function ShapChart({ reasons }) {
+  if (!reasons?.available) {
+    return (
+      <section className="panel">
+        <h2>Why this score</h2>
+        <p className="muted">{reasons?.message ?? "Reasons not available."}</p>
+      </section>
     );
+  }
+
+  const features = reasons.top_features;
+  // Longest bar = the feature with the biggest effect; others scale to it
+  const biggest = Math.max(...features.map((f) => Math.abs(f.shap_value)));
+
+  return (
+    <section className="panel">
+      <div className="panel-head">
+        <h2>Why this score</h2>
+        <div className="legend small">
+          <span><span className="swatch raises" />Raises risk</span>
+          <span><span className="swatch lowers" />Lowers risk</span>
+        </div>
+      </div>
+
+      {features.map((f) => {
+        const raises = f.shap_value > 0;
+        return (
+          <div key={f.feature_name} className="reason">
+            <div className="reason-top">
+              <span>
+                {f.feature_name}
+                {f.value != null && <span className="muted small"> = {f.value}</span>}
+              </span>
+              <span className="mono">{raises ? "+" : ""}{f.shap_value.toFixed(4)}</span>
+            </div>
+            <div className="reason-bar">
+              <div className={`reason-fill ${raises ? "raises" : "lowers"}`}
+                   style={{ width: `${(Math.abs(f.shap_value) / biggest) * 100}%` }} />
+            </div>
+          </div>
+        );
+      })}
+
+      <p className="panel-foot">
+        Reasons come from the XGBoost baseline ({reasons.horizon}h SHAP values). They show what
+        the model weighed, not a diagnosis.
+      </p>
+    </section>
+  );
 }
 
 export default ShapChart;

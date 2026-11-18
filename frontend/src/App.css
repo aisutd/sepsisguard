@@ -1,78 +1,284 @@
-.dashboard {
-  display: grid;
-  grid-template-columns: 280px 1fr;
-  grid-template-rows: auto 1fr;
-  grid-template-areas:
-    "header  header"
-    "sidebar detail";
-  gap: var(--space);
-  padding: var(--space);
-  min-height: 100vh;
-}
+/* Layout and styles for the SepsisGuard screen, following the Figma prototype.
+   Colors come from the variables in index.css. Sizes are kept compact so each
+   screen fits on the presenting laptop at 100% zoom. */
 
-.dashboard-header {
-  grid-area: header;
-}
+/* ---------- Page frame ---------- */
+.app { min-height: 100vh; display: flex; flex-direction: column; }
 
-.dashboard-header h1 {
-  margin: 0;
-  font-size: 1.5rem;
-}
-
-.sidebar {
-  grid-area: sidebar;
+.page {
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 14px 24px;
   display: flex;
   flex-direction: column;
+  gap: 12px;
 }
 
-.sidebar .panel {
-  flex: 1;
+.muted { color: var(--muted); }
+.small { font-size: 0.85rem; }
+
+/* ---------- Header ---------- */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 24px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+.brand { display: flex; align-items: center; gap: 12px; }
+.brand-logo {
+  width: 30px; height: 30px;
+  border-radius: 7px;
+  background: var(--blue);
+  display: grid; place-items: center;
+}
+.brand-name { font-weight: 700; }
+.brand-sub { font-size: 0.8rem; color: var(--muted); }
+.header-actions { display: flex; align-items: center; gap: 10px; }
+
+.api-pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--track);
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+.api-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+.api-pill.ok .api-dot { background: var(--green); }
+.api-pill.down .api-dot { background: var(--urgent-fg); }
+
+/* ---------- Disclaimer (required) ---------- */
+.disclaimer {
+  padding: 6px 24px;
+  background: var(--high-bg);
+  color: var(--high-fg);
+  border-bottom: 1px solid var(--border);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
 }
 
-.detail {
-  grid-area: detail;
-  display: grid;
-  grid-template-rows: 1fr 1fr;
-  gap: var(--space);
+/* ---------- Buttons ---------- */
+.btn {
+  padding: 7px 14px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-weight: 600;
 }
+.btn:hover:not(:disabled) { border-color: var(--muted); }
+.btn:disabled { opacity: 0.45; cursor: default; }
+.btn-primary { background: var(--blue); border-color: var(--blue); color: #fff; }
+.wide { width: 100%; }
+.link-btn { padding: 0; background: none; border: none; color: var(--blue); font-weight: 600; }
+.btn-icon { background: none; border: none; font-size: 1.1rem; }
 
-.detail-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space);
-}
-
+/* ---------- Panels ---------- */
 .panel {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: var(--space);
+  padding: 14px 18px;
+}
+.panel h2 { margin: 0; font-size: 1.05rem; }
+.panel-head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  flex-wrap: wrap; gap: 12px;
+  margin-bottom: 10px;
+}
+.panel-foot { margin: 10px 0 0; font-size: 0.8rem; color: var(--muted); }
+.placeholder { margin: 0; color: var(--muted); }
+.status { text-align: center; padding: 40px; }
+
+/* ---------- Alert badges (word + color) ---------- */
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.85rem; font-weight: 600;
+  white-space: nowrap;
+}
+.badge-dot { width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.badge-urgent   { color: var(--urgent-fg);   background: var(--urgent-bg); }
+.badge-high     { color: var(--high-fg);     background: var(--high-bg); }
+.badge-elevated { color: var(--elevated-fg); background: var(--elevated-bg); }
+.badge-none     { color: var(--none-fg);     background: var(--none-bg); }
+
+/* Each level-* class sets --level-fg; tiles use it for their accent color */
+.level-urgent   { --level-fg: var(--urgent-fg); }
+.level-high     { --level-fg: var(--high-fg); }
+.level-elevated { --level-fg: var(--elevated-fg); }
+.level-none     { --level-fg: var(--none-fg); }
+
+/* ---------- Overview ---------- */
+.title-row h1 { margin: 0; font-size: 1.6rem; }
+.title-row p { margin: 2px 0 0; }
+
+.count-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.count-tile {
+  padding: 10px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+.count-label { font-size: 0.85rem; font-weight: 600; color: var(--level-fg, var(--muted)); }
+.count-value { font-size: 1.8rem; color: var(--level-fg, var(--text)); }
+
+/* Bed grid: 4 tiles per row, 2 rows for the 8 demo patients */
+.bed-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.bed-tile {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 12px 14px;
+  text-align: left;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 6px solid var(--level-fg);   /* color repeats the level */
+  border-radius: var(--radius);
+}
+.bed-tile:hover,
+.bed-tile:focus-visible {
+  outline: none;
+  border-color: var(--blue);
+  border-left-color: var(--level-fg);
+  box-shadow: 0 0 0 2px var(--lowers);
+}
+.bed-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 4px; }
+.bed-id { font-size: 1.1rem; font-weight: 600; }
+.bed-meta { font-size: 0.9rem; color: var(--text-2); }
+
+/* ---------- Patient screen ---------- */
+.page-nav { display: flex; justify-content: space-between; align-items: center; }
+.nav-buttons { display: flex; gap: 8px; }
+
+.patient-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px; }
+.patient-title { display: flex; align-items: center; gap: 12px; }
+.patient-title h1 { margin: 0; font-size: 1.6rem; }
+.header-stats { display: flex; gap: 40px; }
+.stat-label { font-size: 0.8rem; color: var(--muted); }
+.stat-value { font-size: 1.15rem; font-weight: 600; }
+
+/* Two columns: risk + chart on the left, reasons + summary on the right */
+.detail-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 12px; align-items: start; }
+
+/* Risk by horizon */
+.horizon-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.horizon-card {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.horizon-score { font-size: 1.6rem; }
+.meter { position: relative; width: 100%; height: 6px; background: var(--track); border-radius: 3px; }
+.meter-fill { height: 100%; background: var(--blue); border-radius: 3px; }
+.meter-cutoff { position: absolute; left: 50%; top: -4px; width: 2px; height: 14px; background: var(--text); }
+
+/* Reasons */
+.legend { display: flex; align-items: center; gap: 14px; }
+.swatch { display: inline-block; width: 11px; height: 11px; margin-right: 5px; border-radius: 3px; vertical-align: -1px; }
+.swatch.raises { background: var(--raises); }
+.swatch.lowers { background: var(--lowers); }
+.reason { margin-bottom: 9px; }
+.reason-top { display: flex; justify-content: space-between; margin-bottom: 4px; font-size: 0.92rem; font-weight: 600; }
+.reason-bar { height: 8px; background: var(--track); border-radius: 4px; }
+.reason-fill { height: 100%; border-radius: 4px; }
+.reason-fill.raises { background: var(--raises); }
+.reason-fill.lowers { background: var(--lowers); }
+
+/* Chart */
+.chart { display: block; width: 100%; height: auto; }
+.chart .grid { stroke: var(--border); }
+.chart .axis { font-family: var(--mono); font-size: 11px; fill: var(--muted); }
+.chart .score-line { fill: none; stroke: var(--blue); stroke-width: 2; }
+.chart .score-dot { fill: var(--blue); }
+.chart .cutoff-line { stroke: var(--urgent-fg); stroke-dasharray: 5 4; }
+.legend-line { display: inline-block; width: 16px; margin-right: 5px; border-top: 2px solid var(--blue); vertical-align: middle; }
+.legend-line.cutoff { border-top: 2px dashed var(--urgent-fg); }
+
+/* Playback controls under the chart: button, slider, hour, alert level */
+.playback {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+.playback .btn { min-width: 96px; }          /* button doesn't change width between Play/Pause */
+.playback-slider { flex: 1; accent-color: var(--blue); }
+
+/* ---------- Patient screen sidebar ---------- */
+/* Sidebar 250px on the left, patient details take the rest */
+.patient-layout {
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+.patient-main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.back-link { align-self: flex-start; }
+
+/* Stays in view if the details are taller than the screen */
+.sidebar { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 12px; }
+.sidebar .panel { padding: 12px 14px; }
+.sidebar h2 { margin-bottom: 8px; }
+.sidebar p { margin: 0 0 6px; }
+.sidebar-badge { margin-bottom: 6px; }
+
+/* Queue: one row per patient, colored left edge = alert level */
+.queue { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.queue-item {
+  width: 100%;
+  display: flex; justify-content: space-between; align-items: center; gap: 8px;
+  padding: 5px 8px;
+  background: none;
+  border: 1px solid transparent;
+  border-left: 4px solid var(--level-fg);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.88rem;
+  text-align: left;
+}
+.queue-item:hover { background: var(--track); }
+.queue-item.selected {
+  background: var(--track);
+  border-color: var(--blue);
+  border-left-color: var(--level-fg);
+  font-weight: 600;
+}
+.queue-item .badge { font-size: 0.75rem; padding: 2px 8px; }   /* smaller badge to fit 250px */
+
+
+
+/* ---------- Popup ---------- */
+.overlay {
+  position: fixed; inset: 0; z-index: 10;
+  display: grid; place-items: center;
+  background: rgba(20, 23, 31, 0.35);
+}
+.modal {
+  width: min(520px, 92vw);
+  padding: 24px;
+  background: var(--surface);
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+}
+.modal-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid var(--border);
 }
 
-.panel h2 {
-  margin: 0 0 8px;
-  font-size: 1rem;
-}
+/* ---------- Narrow screens (not the demo laptop, but don't break) ---------- */
+@media (max-width: 1000px) {
+  .count-row { grid-template-columns: repeat(3, 1fr); }
+  .bed-grid { grid-template-columns: repeat(2, 1fr); }
+  .detail-grid { grid-template-columns: 1fr; }
+  .patient-layout { grid-template-columns: 1fr; }
+  .sidebar { position: static; }
 
-.placeholder {
-  margin: 0;
-  color: var(--muted);
-}
-
-@media (max-width: 800px) {
-  .dashboard {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "header"
-      "sidebar"
-      "detail";
-  }
-
-  .detail {
-    grid-template-rows: auto;
-  }
-
-  .detail-row {
-    grid-template-columns: 1fr;
-  }
 }
