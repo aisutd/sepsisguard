@@ -1,0 +1,266 @@
+[
+  {
+    "patient_id": "p003455",
+    "icu_hour": 113,
+    "horizon": 12,
+    "source": "XGBoost baseline",
+    "top_features": [
+      {
+        "feature_name": "ICULOS",
+        "shap_value": 0.3921,
+        "value": 113.0
+      },
+      {
+        "feature_name": "HospAdmTime",
+        "shap_value": -0.0248,
+        "value": -21.25
+      },
+      {
+        "feature_name": "FiO2",
+        "shap_value": 0.0198,
+        "value": 0.5
+      },
+      {
+        "feature_name": "WBC",
+        "shap_value": 0.0195,
+        "value": 18.1
+      },
+      {
+        "feature_name": "MAP",
+        "shap_value": 0.0158,
+        "value": 54.0
+      }
+    ]
+  },
+  {
+    "patient_id": "p019680",
+    "icu_hour": 70,
+    "horizon": 12,
+    "source": "XGBoost baseline",
+    "top_features": [
+      {
+        "feature_name": "ICULOS",
+        "shap_value": 0.4021,
+        "value": 70.0
+      },
+      {
+        "feature_name": "FiO2",
+        "shap_value": 0.0276,
+        "value": 0.5
+      },
+      {
+        "feature_name": "WBC",
+        "shap_value": 0.0205,
+        "value": 16.5
+      },
+      {
+        "feature_name": "HospAdmTime",
+        "shap_value": -0.0198,
+        "value": -3.57
+      },
+      {
+        "feature_name": "MAP",
+        "shap_value": -0.0101,
+        "value": 84.0
+      }
+    ]
+  },
+  {
+    "patient_id": "p109388",
+    "icu_hour": 36,
+    "horizon": 12,
+    "source": "XGBoost baseline",
+    "top_features": [
+      {
+        "feature_name": "ICULOS",
+        "shap_value": -0.0372,
+        "value": 36.0
+      },
+      {
+        "feature_name": "Lactate",
+        "shap_value": -0.0149,
+        "value": 1.59
+      },
+      {
+        "feature_name": "HospAdmTime",
+        "shap_value": 0.0144,
+        "value": 0.0
+      },
+      {
+        "feature_name": "BUN",
+        "shap_value": -0.0094,
+        "value": 15.0
+      },
+      {
+        "feature_name": "FiO2",
+        "shap_value": -0.0076,
+        "value": 0.4
+      }
+    ]
+  },
+  {
+    "patient_id": "p111054",
+    "icu_hour": 35,
+    "horizon": 12,
+    "source": "XGBoost baseline",
+    "top_features": [
+      {
+        "feature_name": "Temp",
+        "shap_value": 0.104,
+        "value": 38.1
+      },
+      {
+        "feature_name": "ICULOS",
+        "shap_value": -0.0477,
+        "value": 35.0
+      },
+      {
+        "feature_name": "AST",
+        "shap_value": 0.0249,
+        "value": 56.0
+      },
+      {
+        "feature_name": "Lactate",
+        "shap_value": 0.0166,
+        "value": 1.13
+      },
+      {
+        "feature_name": "HospAdmTime",
+        "shap_value": -0.0149,
+        "value": -98.21
+      }
+    ]
+  },
+  {
+    "patient_id": "p000619",
+    "icu_hour": 28,
+    "horizon": 12,
+    "source": "XGBoost baseline",
+    "top_features": [
+      {
+        "feature_name": "ICULOS",
+        "shap_value": -0.0339,
+        "value": 28.0
+      },
+      {
+        "feature_name": "HospAdmTime",
+        "shap_value": -0.0131,
+        "value": -60.94
+      },
+      {
+        "feature_name": "Lactate",
+        "shap_value": -0.0106,
+        "value": 1.59
+      },
+      {
+        "feature_name": "BUN",
+        "shap_value": -0.0082,
+        "value": 12.0
+      },
+      {
+        "feature_name": "FiO2",
+        "shap_value": -0.0081,
+        "value": 0.4
+      }
+    ]
+  },
+  {
+    "patient_id": "p105904",
+    "icu_hour": 36,
+    "horizon": 12,
+    "source": "XGBoost baseline",
+    "top_features": [
+      {
+        "feature_name": "ICULOS",
+        "shap_value": -0.0329,
+        "value": 36.0
+      },
+      {
+        "feature_name": "HospAdmTime",
+        "shap_value": -0.0142,
+        "value": -8.22
+      },
+      {
+        "feature_name": "Lactate",
+        "shap_value": -0.0134,
+        "value": 1.59
+      },
+      {
+        "feature_name": "BUN",
+        "shap_value": 0.0086,
+        "value": 52.0
+      },
+      {
+        "feature_name": "FiO2",
+        "shap_value": -0.0086,
+        "value": 0.4
+      }
+    ]
+  },
+  {
+    "patient_id": "p109064",
+    "icu_hour": 26,
+    "horizon": 12,
+    "source": "XGBoost baseline",
+    "top_features": [
+      {
+        "feature_name": "ICULOS",
+        "shap_value": -0.0336,
+        "value": 26.0
+      },
+      {
+        "feature_name": "Resp",
+        "shap_value": 0.0267,
+        "value": 29.5
+      },
+      {
+        "feature_name": "HR",
+        "shap_value": 0.0144,
+        "value": 104.5
+      },
+      {
+        "feature_name": "HospAdmTime",
+        "shap_value": -0.0132,
+        "value": -4.69
+      },
+      {
+        "feature_name": "FiO2",
+        "shap_value": -0.0096,
+        "value": 0.4
+      }
+    ]
+  },
+  {
+    "patient_id": "p111162",
+    "icu_hour": 44,
+    "horizon": 12,
+    "source": "XGBoost baseline",
+    "top_features": [
+      {
+        "feature_name": "ICULOS",
+        "shap_value": -0.0242,
+        "value": 44.0
+      },
+      {
+        "feature_name": "Lactate",
+        "shap_value": -0.0158,
+        "value": 1.59
+      },
+      {
+        "feature_name": "HospAdmTime",
+        "shap_value": 0.0119,
+        "value": -0.02
+      },
+      {
+        "feature_name": "FiO2",
+        "shap_value": -0.0113,
+        "value": 0.21
+      },
+      {
+        "feature_name": "Temp",
+        "shap_value": -0.0105,
+        "value": 37.2
+      }
+    ]
+  }
+]
