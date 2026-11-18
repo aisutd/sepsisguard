@@ -1,13 +1,36 @@
+/* Design tokens from the Figma file "SepsisGuard App Prototype".
+   Components use these names instead of raw colors, so a color is changed
+   in one place. Figma variable names are in the comments. */
 :root {
-  --bg: #f4f6f8;
-  --surface: #ffffff;  
-  --border: #d8dde3;   
-  --text: #1d2733;      
-  --muted: #6b7684;     
-  --space: 16px;        
-  --radius: 8px;
+  /* Page */
+  --bg: #f6f7f9;        /* Figma: bg */
+  --surface: #ffffff;   /* Figma: white */
+  --border: #e2e5ea;    /* Figma: line */
+  --text: #14171f;      /* Figma: ink */
+  --text-2: #3a3f4b;    /* Figma: ink2 */
+  --muted: #5b6170;     /* Figma: muted (SummaryCard also uses this name) */
+  --track: #f1f3f6;     /* Figma: track, the empty part of a bar */
+  --blue: #1f4fd1;      /* Figma: blue, buttons and the score line */
+  --green: #1e7a5f;     /* Figma: green, "API connected" dot */
 
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* Reasons bars */
+  --raises: #b45309;    /* Figma: orange, the feature raises risk */
+  --lowers: #9db4ee;    /* Figma: lblue, the feature lowers risk */
+
+  /* Alert levels: text color and background color for each.
+     Figma had 3 levels; the backend has 4, so two colors were added. */
+  --urgent-fg: #9b1c12;   --urgent-bg: #fde8e6;   /* Figma: hiFg / hiBg */
+  --high-fg: #8a4a06;     --high-bg: #fef0dc;     /* Figma: moFg / moBg */
+  --elevated-fg: #6b5800; --elevated-bg: #fbf3cc; /* added: yellow */
+  --none-fg: #5b6170;     --none-bg: #f1f3f6;     /* added: grey, so "No alert" doesn't read as "safe" */
+
+  --space: 16px;
+  --radius: 10px;
+  --font: "Inter", "Segoe UI", system-ui, sans-serif;
+  --mono: "JetBrains Mono", Consolas, monospace;
+
+  font-family: var(--font);
+  font-size: 17px; /* large enough to read on a projector */
   color: var(--text);
   background: var(--bg);
 }
@@ -18,4 +41,15 @@
 
 body {
   margin: 0;
+}
+
+/* Buttons use the page font instead of the browser default */
+button {
+  font: inherit;
+  cursor: pointer;
+}
+
+/* IDs and numbers use the monospace font, as in the design */
+.mono {
+  font-family: var(--mono);
 }
