@@ -22,3 +22,24 @@ docker compose ps
 ```
 
 This is a generic starter configuration. The team can add project-specific dependencies and startup commands later.
+
+## How to run the app
+
+You need two terminals, both starting in the `sepsisguard/` folder.
+
+**1. Backend** (FastAPI, http://localhost:8000):
+```powershell
+pip install -r requirements.txt
+cd backend
+uvicorn main:app --reload --port 8000
+```
+
+**2. Frontend** (React + Vite, http://localhost:5173):
+```powershell
+cd frontend
+npm install
+npm run dev
+```
+
+Open http://localhost:5173. The frontend reads everything from the backend,
+so start the backend first. If it isn't running, the screen says so.
