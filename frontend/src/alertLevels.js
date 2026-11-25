@@ -26,3 +26,15 @@ export function sortByAlert(patients) {
   };
   return [...patients].sort((a, b) => rank(a) - rank(b));
 }
+
+// How far a score is past its alert threshold, in words (ratio = score ÷ cutoff,
+// so 1 = at the threshold). A ratio, never a percentage: scores are relative risk.
+export function thresholdText(ratio) {
+  if (ratio == null) return "Score not available";
+  return ratio < 1 ? "Below its alert threshold" : `${ratio.toFixed(1)}× its alert threshold`;
+}
+
+// Bar width in % for a ratio. The tick at 25% is the threshold (1×),
+// so a full bar means 4× the threshold or more.
+export const meterFill = (ratio) => Math.min((ratio ?? 0) / 4, 1) * 100;
+

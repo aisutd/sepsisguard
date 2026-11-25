@@ -1,41 +1,38 @@
 import AlertBadge from "./AlertBadge";
 
-// Header of the patient screen (checklist: ID, site, ICU hour, confidence,
-// outcome labelled "demo only"). `detail` is the GET /patients/{id} response.
-function PatientHeader({ detail }) {
-  const { alert, confidence, outcome } = detail;
+// One-line patient header for Patient Review, shown in the strip at the top
+// between "‹ Ward" and Previous / Next. Kept to one row so the page fits one
+// screen. Shows ID, site, ICU hour, alert level and confidence. The outcome is
+// never shown as words: the chart marks sepsis onset only once the replay
+// clock passes it (RiskHistoryChart.jsx).
+
+//
+// Props:
+//   detail  the GET /patients/{id} response
+//   level   alert level at the replay clock's hour (App.jsx)
+//   hour    the clock's hour, capped at the snapshot
+// `level` and `hour` come from the replay clock, so the header matches the
+// chart and the horizon cards.
+function PatientHeader({ detail, level, hour }) {
+  const { confidence } = detail;
 
   return (
-    <section className="panel patient-header">
-      <div>
-        <div className="patient-title">
-          <h1 className="mono">{detail.patient_id}</h1>
-          <AlertBadge level={alert.level} />
-        </div>
-        <div className="muted small">
-          Site {detail.site} · ICU hour {detail.snapshot_icu_hour} of {detail.total_icu_hours}
-          {/* Which horizon's score set the level, e.g. "set by the 6h score" */}
-          {alert.triggered_by && <> · level set by the {alert.triggered_by} score</>}
-        </div>
-      </div>
+    <div className="strip-info">
+      <h1 className="mono strip-id">{detail.patient_id}</h1>
+      <AlertBadge level={level} />
+      <span className="strip-item">Site {detail.site} · ICU hour {hour} of {detail.snapshot_icu_hour}</span>
+            <span className="strip-item">
+        Confidence <strong>{confidence.available ? confidence.label : "n/a"}</strong>
+      </span>
+      {/* Inputs blank in the raw data at this hour, filled in by the cleaning step */}
+      {confidence.available && (
+        <span className="strip-item">
+          {confidence.imputed_count} of {confidence.total_inputs} measurements were missing and estimated
+        </span>
+      )}
 
-      <div className="header-stats">
-        <div>
-          <div className="stat-label">Confidence</div>
-          <div className="stat-value">{confidence.available ? confidence.label : "not available"}</div>
-          {/* Confidence depends on how many inputs were filled in instead of measured */}
-          {confidence.available && (
-            <div className="muted small">
-              {confidence.imputed_count} of {confidence.total_inputs} inputs filled in
-            </div>
-          )}
-        </div>
-        <div>
-          <div className="stat-label">Outcome (demo only)</div>
-          <div className="stat-value">{outcome.developed_sepsis ? "Sepsis" : "No sepsis"}</div>
-        </div>
-      </div>
-    </section>
+      
+    </div>
   );
 }
 

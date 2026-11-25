@@ -3,7 +3,9 @@
    screen fits on the presenting laptop at 100% zoom. */
 
 /* ---------- Page frame ---------- */
-.app { min-height: 100vh; display: flex; flex-direction: column; }
+/* App frame: navigation sidebar on the left, everything else on the right */
+.app { min-height: 100vh; display: grid; grid-template-columns: 220px 1fr; }
+.app-main { display: flex; flex-direction: column; min-width: 0; }
 
 .page {
   width: 100%;
@@ -21,35 +23,62 @@
 /* ---------- Header ---------- */
 .app-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: space-between;   /* replay controls left, buttons right */
+  gap: 16px;
   align-items: center;
   padding: 8px 24px;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
 }
-.brand { display: flex; align-items: center; gap: 12px; }
 .brand-logo {
   width: 30px; height: 30px;
   border-radius: 7px;
   background: var(--blue);
   display: grid; place-items: center;
 }
-.brand-name { font-weight: 700; }
 .brand-sub { font-size: 0.8rem; color: var(--muted); }
 .header-actions { display: flex; align-items: center; gap: 10px; }
+.header-title { margin: 0; font-size: 1.15rem; white-space: nowrap; }
+.header-left { display: flex; justify-content: flex-end; }   /* replay controls on the right */
 
-.api-pill {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 6px 12px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  background: var(--track);
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-.api-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+
 .api-pill.ok .api-dot { background: var(--green); }
 .api-pill.down .api-dot { background: var(--urgent-fg); }
+
+/* ---------- Navigation sidebar ---------- */
+.nav-sidebar {
+  position: sticky; top: 0;          /* stays in place if the page scrolls */
+  height: 100vh;
+  display: flex; flex-direction: column; gap: 24px;
+  padding: 20px 14px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+.nav-brand { display: flex; align-items: center; gap: 10px; padding: 0 6px; }
+
+/* App title: larger and bolder than anything else on screen */
+.nav-title { font-size: 1.5rem; font-weight: 800; line-height: 1.1; letter-spacing: -0.01em; }
+
+.nav-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.nav-item {
+  width: 100%;
+  padding: 10px 12px;
+  text-align: left;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  color: var(--text-2);
+  font-weight: 500;
+}
+.nav-item:hover { background: var(--track); color: var(--text); }
+
+/* Current page: blue text, light background, blue bar on the left */
+.nav-item.active {
+  background: var(--track);
+  color: var(--blue);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--blue);
+}
 
 /* ---------- Disclaimer (required) ---------- */
 .disclaimer {
@@ -61,6 +90,15 @@
   font-weight: 600;
   text-align: center;
 }
+
+/* "Details" in the banner: looks like a link, opens Data and safety */
+.disclaimer-link {
+  padding: 0; margin-left: 6px;
+  background: none; border: none;
+  color: inherit; font: inherit;
+  text-decoration: underline;
+}
+
 
 /* ---------- Buttons ---------- */
 .btn {
@@ -154,17 +192,11 @@
 
 /* ---------- Patient screen ---------- */
 .page-nav { display: flex; justify-content: space-between; align-items: center; }
-.nav-buttons { display: flex; gap: 8px; }
+.nav-buttons { display: flex; align-items: center; gap: 8px; }
 
-.patient-header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 24px; }
-.patient-title { display: flex; align-items: center; gap: 12px; }
+
 .patient-title h1 { margin: 0; font-size: 1.6rem; }
-.header-stats { display: flex; gap: 40px; }
-.stat-label { font-size: 0.8rem; color: var(--muted); }
-.stat-value { font-size: 1.15rem; font-weight: 600; }
 
-/* Two columns: risk + chart on the left, reasons + summary on the right */
-.detail-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: 12px; align-items: start; }
 
 /* Risk by horizon */
 .horizon-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
@@ -178,6 +210,13 @@
 .meter { position: relative; width: 100%; height: 6px; background: var(--track); border-radius: 3px; }
 .meter-fill { height: 100%; background: var(--blue); border-radius: 3px; }
 .meter-cutoff { position: absolute; left: 50%; top: -4px; width: 2px; height: 14px; background: var(--text); }
+
+/* Horizon cards: label + badge, bar (tick = threshold at 25%), words, small print */
+.horizon-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; width: 100%; }
+.horizon-label { font-weight: 700; }
+.horizon-meter { margin: 2px 0; }
+.horizon-meter .meter-cutoff { left: 25%; }
+.horizon-ratio { font-size: 0.9rem; color: var(--text-2); }
 
 /* Reasons */
 .legend { display: flex; align-items: center; gap: 14px; }
@@ -195,11 +234,62 @@
 .chart { display: block; width: 100%; height: auto; }
 .chart .grid { stroke: var(--border); }
 .chart .axis { font-family: var(--mono); font-size: 11px; fill: var(--muted); }
-.chart .score-line { fill: none; stroke: var(--blue); stroke-width: 2; }
-.chart .score-dot { fill: var(--blue); }
-.chart .cutoff-line { stroke: var(--urgent-fg); stroke-dasharray: 5 4; }
+.chart .cutoff-line { stroke: var(--muted); stroke-dasharray: 5 4; }
 .legend-line { display: inline-block; width: 16px; margin-right: 5px; border-top: 2px solid var(--blue); vertical-align: middle; }
-.legend-line.cutoff { border-top: 2px dashed var(--urgent-fg); }
+.legend-line.cutoff { border-top: 2px dashed var(--muted); }
+
+/* ---------- Risk over this patient's stay ---------- */
+.risk-chart { position: relative; }                   /* holds the tooltip */
+
+/* One line per horizon: different color AND dash, so it reads without color */
+.risk-line { fill: none; stroke-width: 2.5; }
+.risk-line.h6  { stroke: var(--urgent-fg); }                                         /* solid */
+.risk-line.h12 { stroke: var(--high-fg); stroke-dasharray: 8 5; }                    /* dashed */
+.risk-line.h24 { stroke: #b08d00; stroke-dasharray: 1 5; stroke-linecap: round; }    /* dotted */
+.risk-dot.h6  { fill: var(--urgent-fg); }
+.risk-dot.h12 { fill: var(--high-fg); }
+.risk-dot.h24 { fill: #b08d00; }
+
+/* Level ribbon under the lines */
+.chart .ribbon-bg { fill: var(--track); }
+.chart .ribbon-cell.none     { fill: var(--border); }
+.chart .ribbon-cell.elevated { fill: #e3c341; }
+.chart .ribbon-cell.high     { fill: #e8892b; }
+.chart .ribbon-cell.urgent   { fill: var(--urgent-fg); }
+
+/* Markers and notes */
+.chart .marker-alert line { stroke: var(--blue); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.chart .marker-alert circle { fill: var(--blue); }
+.chart .marker-onset line { stroke: var(--urgent-fg); stroke-width: 1.5; stroke-dasharray: 4 3; }
+.chart .marker-alert text,
+.chart .marker-onset text,
+.chart .warning-gap text,
+.chart .missed-note,
+.chart .end-note { font-size: 13px; fill: var(--text); }
+.chart .marker-onset text,
+.chart .missed-note { fill: var(--urgent-fg); font-weight: 600; }
+.chart .warning-gap line { stroke: var(--text); stroke-width: 1.5; }
+.chart .end-note { fill: var(--muted); }
+.chart .hover-line { stroke: var(--muted); stroke-width: 1; }
+
+/* Hover tooltip */
+.chart-tooltip {
+  position: absolute; top: 0; z-index: 2;
+  transform: translateX(-50%);
+  pointer-events: none;                 /* doesn't block the mouse */
+  display: flex; flex-direction: column; gap: 3px;
+  min-width: 160px;
+  padding: 8px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  font-size: 0.8rem;
+}
+.chart-tooltip.left-edge  { transform: none; }
+.chart-tooltip.right-edge { transform: translateX(-100%); }
+.tooltip-hour { font-weight: 700; }
+.tooltip-row { display: grid; grid-template-columns: 3ch 1fr auto; gap: 8px; }
 
 /* Playback controls under the chart: button, slider, hour, alert level */
 .playback {
@@ -211,48 +301,105 @@
 .playback .btn { min-width: 96px; }          /* button doesn't change width between Play/Pause */
 .playback-slider { flex: 1; accent-color: var(--blue); }
 
-/* ---------- Patient screen sidebar ---------- */
-/* Sidebar 250px on the left, patient details take the rest */
-.patient-layout {
+/* ---------- Patient Review layout ---------- */
+/* Toolbar row on top, then the patient's details stacked below */
+.patient-main { display: flex; flex-direction: column; gap: 10px; min-width: 0; flex: 1; min-height: 0; }
+/* ---------- Patient Review: one screen at 100% zoom ---------- */
+/* The right-hand column is exactly one window tall. The strip and chart keep
+   their size; the three cards share the rest and scroll inside if needed,
+   so the page itself never scrolls. */
+.app-main.fit-screen { height: 100vh; }
+.app-main.fit-screen .page { flex: 1; min-height: 0; }
+.patient-main > .patient-strip,
+.patient-main > section { flex-shrink: 0; }       /* strip and chart don't shrink */
+
+/* Header strip: back link | patient info | Previous / Next */
+.patient-strip { display: flex; align-items: center; gap: 16px; padding: 8px 14px; }
+.strip-info { flex: 1; display: flex; align-items: center; flex-wrap: wrap; gap: 4px 16px; min-width: 0; }
+.strip-id { margin: 0; font-size: 1.25rem; }
+.strip-item { font-size: 0.9rem; color: var(--text-2); white-space: nowrap; }
+.btn-small { padding: 4px 10px; font-size: 0.85rem; }
+
+/* Three compact cards sharing the leftover height */
+.card-row {
+  flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: 250px 1fr;
-  gap: 12px;
-  align-items: start;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
 }
-.patient-main { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
-.back-link { align-self: flex-start; }
+.card-row > .panel { min-height: 0; overflow: auto; padding: 10px 14px; }  /* scroll inside the card */
+.card-row .panel-head { margin-bottom: 6px; }
 
-/* Stays in view if the details are taller than the screen */
-.sidebar { display: flex; flex-direction: column; gap: 12px; position: sticky; top: 12px; }
-.sidebar .panel { padding: 12px 14px; }
-.sidebar h2 { margin-bottom: 8px; }
-.sidebar p { margin: 0 0 6px; }
-.sidebar-badge { margin-bottom: 6px; }
+/* Compact versions of the teammates' panels (CSS only, their files unchanged) */
+.card-row .horizon-row { grid-template-columns: 1fr; gap: 6px; }   /* stacked: the words need the width */
+.card-row .horizon-card { padding: 8px; gap: 4px; }
+.card-row .horizon-score { font-size: 1.15rem; }
+.card-row .badge { font-size: 0.75rem; padding: 2px 8px; }
+.card-row .reason { margin-bottom: 6px; }
+.card-row .reason-bar { height: 6px; }
 
-/* Queue: one row per patient, colored left edge = alert level */
-.queue { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
-.queue-item {
-  width: 100%;
-  display: flex; justify-content: space-between; align-items: center; gap: 8px;
-  padding: 5px 8px;
-  background: none;
-  border: 1px solid transparent;
-  border-left: 4px solid var(--level-fg);
-  border-radius: 6px;
+
+/* ---------- Replay controls (top bar) ---------- */
+/* One clock for the Ward, Patient Review and Alerts (replay.js) */
+.header-left { flex: 1; min-width: 0; }
+.replay-bar { display: flex; align-items: center; gap: 10px; }
+.replay-play { min-width: 92px; }             /* same width for Play / Pause */
+.replay-speed {
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
   color: var(--text);
-  font-size: 0.88rem;
+  font: inherit;
+}
+.replay-slider { flex: 1; min-width: 120px; max-width: 360px; accent-color: var(--blue); }
+.replay-hour { font-weight: 700; white-space: nowrap; min-width: 11ch; }
+
+/* ---------- Ward tiles ---------- */
+.bed-meter { margin: 6px 0 2px; }
+.bed-meter .meter-cutoff { left: 25%; }        /* full bar = 4× the cutoff */
+.bed-tile.ended { opacity: 0.7; }              /* scores ended: frozen */
+
+/* Patient Review: waits for the snapshot hour in place of reasons + summary */
+.snapshot-wait { grid-column: span 2; }
+
+/* ---------- Alerts page ---------- */
+.alert-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.alert-row {
+  width: 100%;
+  display: flex; align-items: center; gap: 14px;
+  padding: 10px 14px;
   text-align: left;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 6px solid var(--level-fg);
+  border-radius: var(--radius);
 }
-.queue-item:hover { background: var(--track); }
-.queue-item.selected {
-  background: var(--track);
-  border-color: var(--blue);
-  border-left-color: var(--level-fg);
-  font-weight: 600;
+.alert-row:hover { border-color: var(--blue); border-left-color: var(--level-fg); }
+.alert-row .muted { margin-left: auto; }
+
+/* ---------- Track record ---------- */
+.stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.stat-tile {
+  padding: 14px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
-.queue-item .badge { font-size: 0.75rem; padding: 2px 8px; }   /* smaller badge to fit 250px */
+.stat-tile p { margin: 4px 0 0; color: var(--text-2); font-size: 0.9rem; }
+.stat-value { font-size: 1.5rem; font-weight: 700; }
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+.data-table th { text-align: left; font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+.data-table th,
+.data-table td { padding: 8px 10px; border-bottom: 1px solid var(--border); }
+.caveats { margin: 8px 0 0; padding-left: 20px; color: var(--text-2); font-size: 0.9rem; }
+.caveats li { margin-bottom: 6px; }
 
-
+/* ---------- Data and safety ---------- */
+.safety-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.safety-grid .panel p { margin: 6px 0 0; color: var(--text-2); font-size: 0.92rem; line-height: 1.5; }
 
 /* ---------- Popup ---------- */
 .overlay {
@@ -275,10 +422,20 @@
 
 /* ---------- Narrow screens (not the demo laptop, but don't break) ---------- */
 @media (max-width: 1000px) {
+  .app-header { flex-wrap: wrap; }
+  .snapshot-wait { grid-column: auto; }
+  .app { grid-template-columns: 1fr; }                     /* nav goes on top */
+  .nav-sidebar { position: static; height: auto; }
+  .nav-list { flex-direction: row; flex-wrap: wrap; }      /* links in a row */
   .count-row { grid-template-columns: repeat(3, 1fr); }
   .bed-grid { grid-template-columns: repeat(2, 1fr); }
-  .detail-grid { grid-template-columns: 1fr; }
-  .patient-layout { grid-template-columns: 1fr; }
-  .sidebar { position: static; }
+  .app-main.fit-screen { height: auto; }
+  .card-row { grid-template-columns: 1fr; }
+  .card-row > .panel { overflow: visible; }
+  .stat-row { grid-template-columns: 1fr; }
+  .safety-grid { grid-template-columns: 1fr; }
+
+
+
 
 }
