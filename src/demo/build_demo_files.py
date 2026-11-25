@@ -191,6 +191,11 @@ def build(lock, scores, test):
         snap = hist[hist["ICULOS"] == hour].iloc[0]
         s = scores[scores["patient_id"] == pid]
         at_snap = s[s["ICULOS"] == hour].iloc[0]
+        # Sepsis onset as recorded in the dataset: PhysioNet sets SepsisLabel = 1
+        # from 6 hours before onset, so onset = first hour labeled 1 + 6
+        # (same rule as make_horizon_labels.py). None if the patient never had sepsis.
+        labeled = hist[hist["SepsisLabel"] == 1]
+        onset_hour = int(labeled["ICULOS"].min()) + 6 if len(labeled) else None
 
         patients_out.append({
             "patient_id": pid,
@@ -199,6 +204,9 @@ def build(lock, scores, test):
             "total_icu_hours": int(hist["ICULOS"].max()),
             # Outcome is shown on screen as "demo only": a real ICU would not know it yet.
             "developed_sepsis": p["developed_sepsis"],
+            # The screen shows onset only once the replay clock passes this hour.
+            "sepsis_onset_hour": onset_hour,
+
             **imputed_info(pid, site, hour),
             # The cleaned values the model saw at the snapshot hour (rounded for display).
             "inputs_at_snapshot": {f: round(float(snap[f]), 2) for f in EXPECTED_FIELDS},

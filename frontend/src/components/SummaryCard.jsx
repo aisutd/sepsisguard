@@ -32,21 +32,14 @@ function loadJson(name) {
   });
 }
 
-// "3 of 8 failed" text for a list of checked summaries.
-function failedText(records) {
-  const failed = records.filter((r) => !r.verified).length;
-  return `${failed} of ${records.length}`;
-}
+
 
 function SummaryCard({ selectedPatient = null }) {
   const [demo, setDemo] = useState(null);
-  const [evaluation, setEvaluation] = useState(null);
   const [error, setError] = useState(false);
 
   useEffect(() => {
     loadJson("summaries_demo.json").then(setDemo).catch(() => setError(true));
-    // Optional: the card still works if the 50-patient file is missing.
-    loadJson("summaries_sample.json").then(setEvaluation).catch(() => setEvaluation(null));
   }, []);
 
   const selectedId =
@@ -72,68 +65,60 @@ function SummaryCard({ selectedPatient = null }) {
 
       {record && <SummaryBody record={record} />}
 
-      {demo && (
-        <p style={{ color: "var(--muted)", fontSize: "0.8rem", margin: 0 }}>
-          AI rewrites that failed the check: {failedText(demo)} demo patients
-          {evaluation && <>, {failedText(evaluation)} on our 50-patient test set</>}. A failed
-          rewrite is replaced by the checked template.
-        </p>
-      )}
-
-      <p style={{ color: "var(--muted)", fontSize: "0.8rem", margin: 0 }}>
-        Reasons come from the {record?.source ?? "XGBoost baseline"} ({record?.horizon ?? 12}h) SHAP
-        values. They describe what the model weighed, not a confirmed diagnosis.
-      </p>
+ 
     </section>
   );
 }
 
-// The summary text, its verified/fallback badge, and (on a failure) why.
+// The summary text with a small chip. If the AI rewrite failed the check, the
+// chip says "Checked template used" and opens on click to show why and the
+// rejected text. Failed AI text is never shown as the answer.
 function SummaryBody({ record }) {
   const tone = record.verified ? PASS : FALLBACK;
+  const chip = {
+    alignSelf: "flex-start",
+    fontSize: "0.75rem",
+    fontWeight: 600,
+    padding: "2px 8px",
+    borderRadius: "999px",
+    color: tone.color,
+    background: tone.background,
+    border: `1px solid ${tone.border}`,
+  };
 
   return (
     <>
-      <span
-        style={{
-          alignSelf: "flex-start",
-          fontSize: "0.75rem",
-          fontWeight: 600,
-          padding: "2px 8px",
-          borderRadius: "999px",
-          color: tone.color,
-          background: tone.background,
-          border: `1px solid ${tone.border}`,
-        }}
-      >
-        {record.verified ? "✓ Verified AI summary" : "✓ Checked template summary (AI rewrite rejected)"}
-      </span>
-
-      {/* Never show failed AI text as the answer: fall back to the template. */}
+      {/* Template text when the AI rewrite failed */}
       <p style={{ lineHeight: 1.6, margin: 0 }}>
         {record.verified ? record.summary : record.fallback_summary}
       </p>
 
-      {!record.verified && (
-        <details
-          style={{
-            fontSize: "0.85rem",
-            padding: "0.5rem 0.75rem",
-            borderLeft: `3px solid ${tone.color}`,
-            background: tone.background,
-            lineHeight: 1.5,
-          }}
-        >
-          <summary style={{ cursor: "pointer" }}>
-            Why the AI rewrite was rejected: {record.failure_reason}
+      {record.verified ? (
+        <span style={chip}>✓ Verified AI summary</span>
+      ) : (
+        // The chip itself is the click target; the reason opens below it
+        <details style={{ fontSize: "0.85rem", lineHeight: 1.5 }}>
+          <summary style={{ ...chip, display: "inline-block", cursor: "pointer", listStyle: "none" }}>
+            ✓ Checked template used · why?
           </summary>
-          <div style={{ color: "var(--muted)", marginTop: "0.4rem" }}>
-            Rejected text: "{record.summary}"
+          <div
+            style={{
+              marginTop: "0.4rem",
+              padding: "0.4rem 0.75rem",
+              borderLeft: `3px solid ${tone.color}`,
+              background: tone.background,
+            }}
+          >
+            The AI rewrite was rejected: {record.failure_reason}
+            <div style={{ color: "var(--muted)", marginTop: "0.3rem" }}>
+              Rejected text: "{record.summary}"
+            </div>
           </div>
         </details>
       )}
     </>
   );
 }
+
 
 export default SummaryCard;

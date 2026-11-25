@@ -217,6 +217,10 @@ def patient_detail(patient_id: str):
         "site": patient.get("site"),
         "snapshot_icu_hour": snapshot,
         "total_icu_hours": patient.get("total_icu_hours"),
+        # Sepsis onset hour as recorded in the dataset (None if no sepsis).
+        # The screen shows it only once the replay clock passes this hour.
+        "sepsis_onset_hour": patient.get("sepsis_onset_hour"),
+
         "alert": alert,
         "scores": scores,
         "confidence": confidence_for(patient),
