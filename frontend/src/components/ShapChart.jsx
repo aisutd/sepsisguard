@@ -1,3 +1,8 @@
+import { featureLabel } from "../featureNames";
+import { REASONS_NOTE } from "../disclaimers";
+
+// Feature names are shown in plain words (featureNames.js); the data keeps the codes.
+
 // Immaculate's reasons panel ("Why this score" in the Figma design).
 // Props: reasons = detail.reasons from GET /patients/{id}:
 //   { available, horizon, top_features: [{ feature_name, shap_value, value }] }
@@ -33,10 +38,12 @@ function ShapChart({ reasons }) {
         return (
           <div key={f.feature_name} className="reason">
             <div className="reason-top">
-              <span>
-                {f.feature_name}
-                {f.value != null && <span className="muted small"> = {f.value}</span>}
+              {/* Plain name on screen; hovering shows the original column code */}
+              <span title={f.feature_name}>
+                {featureLabel(f.feature_name)}
+                {f.value != null && <span className="muted small"> {f.value}</span>}
               </span>
+
               <span className="mono">{raises ? "+" : ""}{f.shap_value.toFixed(4)}</span>
             </div>
             <div className="reason-bar">
@@ -47,10 +54,9 @@ function ShapChart({ reasons }) {
         );
       })}
 
-      <p className="panel-foot">
-        Reasons come from the XGBoost baseline ({reasons.horizon}h SHAP values). They show what
-        the model weighed, not a diagnosis.
-      </p>
+      {/* One label; the XGBoost / SHAP explanation is on Data and safety */}
+      <p className="panel-foot">{REASONS_NOTE}</p>
+
     </section>
   );
 }
